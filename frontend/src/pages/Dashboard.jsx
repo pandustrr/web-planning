@@ -5,11 +5,14 @@ import StatCards from '../components/Dashboard/StatCards'
 import RecentPlans from '../components/Dashboard/RecentPlans'
 import QuickActions from '../components/Dashboard/QuickActions'
 import { FileText } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 const Dashboard = ({ isDarkMode, toggleDarkMode }) => {
     const [activeSection, setActiveSection] = useState('dashboard')
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
+
+    const { logout, user } = useAuth()
 
     useEffect(() => {
         const checkScreenSize = () => {
@@ -42,6 +45,10 @@ const Dashboard = ({ isDarkMode, toggleDarkMode }) => {
         if (isMobile) {
             setIsSidebarOpen(false)
         }
+    }
+
+    const handleLogout = () => {
+        logout()
     }
 
     const renderContent = () => {
@@ -182,6 +189,8 @@ const Dashboard = ({ isDarkMode, toggleDarkMode }) => {
                 onClose={closeSidebar}
                 isMobile={isMobile}
                 isDarkMode={isDarkMode}
+                onLogout={handleLogout}
+                user={user}
             />
 
             {/* Main Content */}
@@ -192,6 +201,7 @@ const Dashboard = ({ isDarkMode, toggleDarkMode }) => {
                     isMobile={isMobile}
                     isDarkMode={isDarkMode}
                     toggleDarkMode={toggleDarkMode}
+                    user={user}
                 />
 
                 <main className="flex-1 p-4 lg:p-6 overflow-auto">

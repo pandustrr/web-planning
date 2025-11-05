@@ -7,10 +7,11 @@ import {
     User,
     ChevronRight,
     ChevronLeft,
-    X
+    X,
+    LogOut
 } from 'lucide-react'
 
-const Sidebar = ({ activeSection, setActiveSection, isOpen, onToggle, onClose, isMobile, isDarkMode }) => {
+const Sidebar = ({ activeSection, setActiveSection, isOpen, onToggle, onClose, isMobile, isDarkMode, onLogout, user }) => {
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard Utama', icon: LayoutDashboard },
         { id: 'business-plan', label: 'Rencana Bisnis', icon: FileText },
@@ -27,15 +28,23 @@ const Sidebar = ({ activeSection, setActiveSection, isOpen, onToggle, onClose, i
         }
     }
 
+    const handleLogout = () => {
+        onLogout()
+        if (isMobile) {
+            onClose()
+        }
+    }
+
     return (
         <>
             {/* Sidebar */}
             <div className={`
-        fixed lg:static inset-y-0 left-0 z-50
-        bg-white dark:bg-gray-800 shadow-lg lg:shadow-xl min-h-screen
-        transition-all duration-300 ease-in-out
-        ${isOpen ? 'w-64 translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-20'}
-      `}>
+                fixed lg:static inset-y-0 left-0 z-50
+                bg-white dark:bg-gray-800 shadow-lg lg:shadow-xl min-h-screen
+                transition-all duration-300 ease-in-out
+                ${isOpen ? 'w-64 translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-20'}
+                flex flex-col
+            `}>
                 {/* Logo Section */}
                 <div className="p-4 lg:p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                     {isOpen || !isMobile ? (
@@ -77,7 +86,7 @@ const Sidebar = ({ activeSection, setActiveSection, isOpen, onToggle, onClose, i
                 </div>
 
                 {/* Menu Items */}
-                <nav className="p-2 lg:p-4 space-y-1 lg:space-y-2">
+                <nav className="p-2 lg:p-4 space-y-1 lg:space-y-2 flex-1">
                     {menuItems.map((item) => {
                         const Icon = item.icon
                         const isActive = activeSection === item.id
@@ -86,21 +95,24 @@ const Sidebar = ({ activeSection, setActiveSection, isOpen, onToggle, onClose, i
                             <button
                                 key={item.id}
                                 onClick={() => handleMenuClick(item.id)}
-                                className={`w-full flex items-center p-3 rounded-lg transition-all duration-200 group ${isActive
-                                    ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800'
-                                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
-                                    }`}
+                                className={`w-full flex items-center p-3 rounded-lg transition-all duration-200 group ${
+                                    isActive 
+                                        ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800' 
+                                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+                                }`}
                             >
                                 <Icon
                                     size={20}
-                                    className={`shrink-0 ${isActive ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}
+                                    className={`shrink-0 ${
+                                        isActive ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'
+                                    }`}
                                 />
 
                                 {/* Menu Text */}
                                 <span className={`
-                                font-medium text-left ml-3 
-                                transition-all duration-200
-                                ${isOpen ? 'opacity-100 block' : 'lg:opacity-0 lg:absolute lg:-left-96'}
+                                    font-medium text-left ml-3 
+                                    transition-all duration-200
+                                    ${isOpen ? 'opacity-100 block' : 'lg:opacity-0 lg:absolute lg:-left-96'}
                                 `}>
                                     {item.label}
                                 </span>
@@ -121,16 +133,67 @@ const Sidebar = ({ activeSection, setActiveSection, isOpen, onToggle, onClose, i
                                 <ChevronRight
                                     size={16}
                                     className={`
-                                    shrink-0 transition-transform duration-200 ml-auto
-                                    ${isActive ? 'text-green-600 rotate-90' : 'text-gray-400'}
-                                    ${isOpen ? 'opacity-100' : 'lg:opacity-0'}
-                                `}
+                                        shrink-0 transition-transform duration-200 ml-auto
+                                        ${isActive ? 'text-green-600 dark:text-green-400 rotate-90' : 'text-gray-400 dark:text-gray-500'}
+                                        ${isOpen ? 'opacity-100' : 'lg:opacity-0'}
+                                    `}
                                 />
-
                             </button>
                         )
                     })}
                 </nav>
+
+                {/* User Info & Logout Section */}
+                <div className="p-4 border-t border-gray-100 dark:border-gray-700">
+                    {/* User Info */}
+                    <div className={`flex items-center mb-4 ${!isOpen && 'lg:justify-center'}`}>
+                        <div 
+                            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                            style={{ background: 'linear-gradient(to bottom right, #22c55e, #16a34a)' }}
+                        >
+                            <User size={18} className="text-white" />
+                        </div>
+                        {isOpen && (
+                            <div className="ml-3 flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                    {user?.name || 'User'}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                    {user?.email}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Logout Button */}
+                    <button
+                        onClick={handleLogout}
+                        className={`w-full flex items-center p-3 rounded-lg transition-all duration-200 group text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 ${
+                            !isOpen && 'lg:justify-center'
+                        }`}
+                    >
+                        <LogOut
+                            size={20}
+                            className="shrink-0"
+                        />
+                        
+                        {/* Logout Text */}
+                        <span className={`
+                            font-medium text-left ml-3 
+                            transition-all duration-200
+                            ${isOpen ? 'opacity-100 block' : 'lg:opacity-0 lg:absolute lg:-left-96'}
+                        `}>
+                            Keluar
+                        </span>
+
+                        {/* Tooltip for collapsed state */}
+                        {!isOpen && !isMobile && (
+                            <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white dark:text-gray-200 text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                                Keluar
+                            </div>
+                        )}
+                    </button>
+                </div>
             </div>
 
             {/* Toggle Button ketika sidebar tertutup di desktop */}
