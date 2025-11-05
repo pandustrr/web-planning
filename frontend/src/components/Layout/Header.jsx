@@ -67,7 +67,7 @@ const Header = ({ onToggleSidebar, isMobile, isDarkMode, toggleDarkMode }) => {
                         </div>
                         <div className="hidden md:block">
                             <p className="text-sm font-medium text-gray-900 dark:text-white">John Doe</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Admin</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Status (Free/Pro)</p>
                         </div>
                     </div>
                 </div>
