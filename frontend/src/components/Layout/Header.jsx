@@ -1,10 +1,7 @@
 import { Bell, Search, User, Settings, Menu, Sun, Moon } from 'lucide-react'
 
-const Header = ({ onToggleSidebar, isMobile, isDarkMode, toggleDarkMode }) => {
-    console.log('Dark Mode Status:', isDarkMode) // Debug log
-
+const Header = ({ onToggleSidebar, isMobile, isDarkMode, toggleDarkMode, user }) => {
     const handleDarkModeToggle = () => {
-        console.log('Toggling dark mode...') // Debug log
         toggleDarkMode()
     }
 
@@ -58,6 +55,7 @@ const Header = ({ onToggleSidebar, isMobile, isDarkMode, toggleDarkMode }) => {
                         <Settings size={20} />
                     </button>
 
+                    {/* User Info - Simplified */}
                     <div className="flex items-center space-x-2 lg:space-x-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div
                             className="w-8 h-8 rounded-full flex items-center justify-center"
@@ -66,8 +64,12 @@ const Header = ({ onToggleSidebar, isMobile, isDarkMode, toggleDarkMode }) => {
                             <User size={16} className="text-white" />
                         </div>
                         <div className="hidden md:block">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">John Doe</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Admin</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                {user?.name || 'User'}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {user?.email ? (user.email.includes('pro') ? 'Pro' : 'Free') : 'Free'}
+                            </p>
                         </div>
                     </div>
                 </div>
