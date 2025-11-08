@@ -14,10 +14,6 @@ import VerificationNotice from "./pages/VerificationNotice";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
-// Import react-toastify
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -131,6 +127,18 @@ function AppContent() {
           />
 
           {/* Forgot Password */}
+          {/* <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPassword
+                  isDarkMode={isDarkMode}
+                  toggleDarkMode={toggleDarkMode}
+                />
+              </PublicRoute>
+            }
+          /> */}
+
           <Route
             path="/forgot-password"
             element={
@@ -143,7 +151,7 @@ function AppContent() {
             }
           />
 
-          {/* Reset Password */}
+          {/* Forgot Password */}
           <Route
             path="/reset-password/:token"
             element={
@@ -155,6 +163,17 @@ function AppContent() {
               </PublicRoute>
             }
           />
+          {/* <Route
+            path="/reset-password"
+            element={
+              <PublicRoute>
+                <ResetPassword
+                  isDarkMode={isDarkMode}
+                  toggleDarkMode={toggleDarkMode}
+                />
+              </PublicRoute>
+            }
+          /> */}
 
           {/* Protected Routes */}
           <Route
@@ -173,23 +192,6 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>
-
-      {/* Toast Container untuk seluruh aplikasi */}
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme={isDarkMode ? "dark" : "light"}
-        style={{
-          fontSize: '14px',
-        }}
-      />
     </div>
   );
 }

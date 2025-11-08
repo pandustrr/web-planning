@@ -28,10 +28,6 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
-
-
-
-
 // Business Background
 Route::prefix('business-background')->group(function () {
     Route::post('/', [BusinessController::class, 'store']);     // Create
@@ -50,11 +46,11 @@ Route::prefix('market-analysis')->group(function () {
     Route::delete('/{id}', [MarketAnalysisController::class, 'destroy']);
 });
 
-// Product Service
+// Product Service Routes
 Route::prefix('product-service')->group(function () {
     Route::get('/', [ProductServiceController::class, 'index']);
-    Route::post('/', [ProductServiceController::class, 'store']);
     Route::get('/{id}', [ProductServiceController::class, 'show']);
+    Route::post('/', [ProductServiceController::class, 'store']);
     Route::put('/{id}', [ProductServiceController::class, 'update']);
     Route::delete('/{id}', [ProductServiceController::class, 'destroy']);
 });
