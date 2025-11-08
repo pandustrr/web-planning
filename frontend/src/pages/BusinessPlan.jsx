@@ -9,7 +9,6 @@ import {
     Building
 } from 'lucide-react';
 import Background from '../components/BusinessPlan/BusinessBackground/Background';
-import Operational from '../components/BusinessPlan/OperationalPlan/Operational';
 
 const BusinessPlan = ({ activeSubSection, setActiveSubSection }) => {
     const [view, setView] = useState('main');
@@ -56,28 +55,6 @@ const BusinessPlan = ({ activeSubSection, setActiveSubSection }) => {
                     </p>
                     <div className="flex items-center text-green-600 dark:text-green-400 text-sm font-medium">
                         <span>Kelola Bisnis</span>
-                        <svg className="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                    </div>
-                </div>
-
-                {/* Rencana Operasional Card */}
-                <div
-                    className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all duration-300 cursor-pointer group hover:border-blue-300 dark:hover:border-blue-600"
-                    onClick={() => handleSubSectionClick('operational-plan')}
-                >
-                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                        <Workflow className="text-blue-600 dark:text-blue-400" size={24} />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        Rencana Operasional
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                        Kelola lokasi, karyawan, jam operasional, supplier, dan alur kerja
-                    </p>
-                    <div className="flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium">
-                        <span>Mulai Rencanakan</span>
                         <svg className="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
@@ -155,9 +132,6 @@ const BusinessPlan = ({ activeSubSection, setActiveSubSection }) => {
         switch (view) {
             case 'business-background':
                 return <Background />;
-
-            case 'operational-plan':
-                return <Operational />;
 
             default:
                 return renderMainView();

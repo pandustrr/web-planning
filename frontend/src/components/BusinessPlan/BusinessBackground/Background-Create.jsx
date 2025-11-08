@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Save } from 'lucide-react';
 import BackgroundForm from './Background-Form';
-import { businessPlanAPI } from '../../../services/businessPlanApi'; 
+import { backgroundApi } from '../../../services/businessPlan'; // Import baru
 
 const BackgroundCreate = ({ onBack, onSuccess }) => {
     const [isLoading, setIsLoading] = useState(false);
@@ -69,7 +69,7 @@ const BackgroundCreate = ({ onBack, onSuccess }) => {
             };
 
             console.log('Submitting business data:', submitData);
-            const response = await businessPlanAPI.business.create(submitData);
+            const response = await backgroundApi.create(submitData); // ← Pakai backgroundApi
 
             if (response.data.status === 'success') {
                 alert('Data bisnis berhasil dibuat!');

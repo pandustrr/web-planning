@@ -3,7 +3,7 @@ import BackgroundList from './Background-List';
 import BackgroundCreate from './Background-Create';
 import BackgroundEdit from './Background-Edit';
 import BackgroundView from './Background-View';
-import { businessPlanAPI } from '../../../services/businessPlanApi'; 
+import { backgroundApi } from '../../../services/businessPlan'; 
 
 const Background = () => {
     const [businesses, setBusinesses] = useState([]);
@@ -19,7 +19,7 @@ const Background = () => {
             setError(null);
             
             console.log('Fetching businesses using API...');
-            const response = await businessPlanAPI.business.getAll();
+            const response = await backgroundApi.getAll(); // ← Pakai backgroundApi
             
             console.log('API Response:', response.data);
             
@@ -76,7 +76,7 @@ const Background = () => {
 
         try {
             setError(null);
-            const response = await businessPlanAPI.business.delete(businessId);
+            const response = await backgroundApi.delete(businessId); // ← Pakai backgroundApi
 
             if (response.data.status === 'success') {
                 alert('Data bisnis berhasil dihapus!');

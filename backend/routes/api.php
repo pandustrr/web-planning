@@ -19,13 +19,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
 });
 
-// Operational Plan Routes
-Route::middleware('auth:sanctum')->group(function () {
-    Route::apiResource('operational-plans', ControllersOperationalPlanController::class);
-    Route::get('business-backgrounds', [BusinessController::class, 'index']);
-});
-
-
 // Business Background
 Route::prefix('business-background')->group(function () {
     Route::post('/', [BusinessController::class, 'store']);     // Create
@@ -64,3 +57,9 @@ Route::prefix('market-analysis')->group(function () {
 //         ]);
 //     }
 // });
+
+// Operational Plan Routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('operational-plans', ControllersOperationalPlanController::class);
+    Route::get('business-backgrounds', [BusinessController::class, 'index']);
+});

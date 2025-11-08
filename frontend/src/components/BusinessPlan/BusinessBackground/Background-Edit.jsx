@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Save } from 'lucide-react';
 import BackgroundForm from './Background-Form';
-import { businessPlanAPI } from '../../../services/businessPlanApi'; 
+import { backgroundApi } from '../../../services/businessPlan'; // Import baru
 
 const BackgroundEdit = ({ business, onBack, onSuccess }) => {
     const [isLoading, setIsLoading] = useState(false);
@@ -91,7 +91,7 @@ const BackgroundEdit = ({ business, onBack, onSuccess }) => {
             };
 
             console.log('Updating business data:', submitData);
-            const response = await businessPlanAPI.business.update(business.id, submitData);
+            const response = await backgroundApi.update(business.id, submitData); // ← Pakai backgroundApi
 
             if (response.data.status === 'success') {
                 alert('Data bisnis berhasil diperbarui!');

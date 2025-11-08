@@ -156,7 +156,7 @@ const BackgroundList = ({
                                     className="flex-1 bg-red-600 text-white py-2 px-3 rounded text-sm hover:bg-red-700 transition-colors flex items-center justify-center gap-1"
                                 >
                                     <Trash2 size={16} />
-                                    Hapus
+                                    Delete
                                 </button>
                             </div>
                         </div>
