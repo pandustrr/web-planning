@@ -1,15 +1,61 @@
-import { Building, MapPin, Calendar, Plus, Eye, Edit3, Trash2, Loader, RefreshCw } from 'lucide-react';
+import { Building, MapPin, Calendar, Plus, Eye, Edit3, Trash2, Loader, RefreshCw, X } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'react-toastify';
 
-const BackgroundList = ({ 
-    businesses, 
-    onView, 
-    onEdit, 
-    onDelete, 
+const BackgroundList = ({
+    businesses,
+    onView,
+    onEdit,
+    onDelete,
     onCreateNew,
     isLoading,
     error,
     onRetry
 }) => {
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [businessToDelete, setBusinessToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = (businessId, businessName) => {
+        setBusinessToDelete({ id: businessId, name: businessName });
+        setShowDeleteModal(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!businessToDelete) return;
+
+        setIsDeleting(true);
+        try {
+            await onDelete(businessToDelete.id);
+            // Tampilkan notifikasi sukses dengan react-toastify
+            toast.success('Data bisnis berhasil dihapus!', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
+        } catch (error) {
+            console.error('Error in BackgroundList delete:', error);
+            // Tampilkan notifikasi error
+            toast.error('Gagal menghapus data bisnis!', {
+                position: "top-right",
+                autoClose: 3000,
+            });
+        } finally {
+            setIsDeleting(false);
+            setShowDeleteModal(false);
+            setBusinessToDelete(null);
+        }
+    };
+
+    const handleCancelDelete = () => {
+        setShowDeleteModal(false);
+        setBusinessToDelete(null);
+    };
+
+    // LOADING STATE
     if (isLoading) {
         return (
             <div className="space-y-6">
@@ -29,6 +75,7 @@ const BackgroundList = ({
         );
     }
 
+    // ERROR STATE
     if (error) {
         return (
             <div className="space-y-6">
@@ -62,6 +109,65 @@ const BackgroundList = ({
 
     return (
         <div className="space-y-6">
+            {/* Modal Konfirmasi Delete */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/40">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.25)] border border-gray-200 dark:border-gray-700 max-w-md w-full p-6 transition-all duration-300">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                Konfirmasi Hapus
+                            </h3>
+                            <button
+                                onClick={handleCancelDelete}
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="mb-6 text-center">
+                            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
+                                <Trash2 className="w-6 h-6 text-red-600" />
+                            </div>
+                            <p className="text-gray-600 dark:text-gray-400 mb-2">
+                                Apakah Anda yakin ingin menghapus bisnis ini?
+                            </p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                <strong>"{businessToDelete?.name}"</strong>
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleCancelDelete}
+                                disabled={isDeleting}
+                                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={handleConfirmDelete}
+                                disabled={isDeleting}
+                                className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {isDeleting ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Menghapus...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 size={16} />
+                                        Delete
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* HEADER */}
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Latar Belakang Bisnis</h1>
@@ -76,6 +182,7 @@ const BackgroundList = ({
                 </button>
             </div>
 
+            {/* LIST BISNIS */}
             {businesses.length === 0 ? (
                 <div className="text-center py-12">
                     <Building size={64} className="mx-auto text-gray-400 mb-4" />
@@ -95,8 +202,8 @@ const BackgroundList = ({
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                     {business.logo ? (
-                                        <img 
-                                            src={`http://localhost:8000/storage/${business.logo}`} 
+                                        <img
+                                            src={`http://localhost:8000/storage/${business.logo}`}
                                             alt={business.name}
                                             className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-600"
                                             onError={(e) => {
@@ -114,7 +221,7 @@ const BackgroundList = ({
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
                                 <div className="flex items-center gap-2">
                                     <MapPin size={16} />
@@ -152,7 +259,7 @@ const BackgroundList = ({
                                     Edit
                                 </button>
                                 <button
-                                    onClick={() => onDelete(business.id)}
+                                    onClick={() => handleDeleteClick(business.id, business.name)}
                                     className="flex-1 bg-red-600 text-white py-2 px-3 rounded text-sm hover:bg-red-700 transition-colors flex items-center justify-center gap-1"
                                 >
                                     <Trash2 size={16} />

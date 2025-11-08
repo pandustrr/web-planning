@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Save } from 'lucide-react';
 import BackgroundForm from './Background-Form';
-import { backgroundApi } from '../../../services/businessPlan'; // Import baru
+import { backgroundApi } from '../../../services/businessPlan';
+import { toast } from 'react-toastify';
 
 const BackgroundCreate = ({ onBack, onSuccess }) => {
     const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +33,7 @@ const BackgroundCreate = ({ onBack, onSuccess }) => {
         if (file) {
             // Validate file size (2MB max)
             if (file.size > 2 * 1024 * 1024) {
-                alert('Ukuran file maksimal 2MB');
+                toast.error('Ukuran file maksimal 2MB');
                 return;
             }
             
@@ -69,10 +70,11 @@ const BackgroundCreate = ({ onBack, onSuccess }) => {
             };
 
             console.log('Submitting business data:', submitData);
-            const response = await backgroundApi.create(submitData); // ← Pakai backgroundApi
+            const response = await backgroundApi.create(submitData);
 
             if (response.data.status === 'success') {
-                alert('Data bisnis berhasil dibuat!');
+                // Tampilkan notifikasi sukses dengan react-toastify
+                toast.success('Data bisnis berhasil dibuat!');
                 onSuccess();
             } else {
                 throw new Error(response.data.message || 'Terjadi kesalahan');
@@ -89,7 +91,7 @@ const BackgroundCreate = ({ onBack, onSuccess }) => {
                 errorMessage = errors.join(', ');
             }
             
-            alert(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setIsLoading(false);
         }

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Save } from 'lucide-react';
 import BackgroundForm from './Background-Form';
-import { backgroundApi } from '../../../services/businessPlan'; // Import baru
+import { backgroundApi } from '../../../services/businessPlan';
+import { toast } from 'react-toastify';
 
 const BackgroundEdit = ({ business, onBack, onSuccess }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [logoPreview, setLogoPreview] = useState(null);
+    const [currentLogo, setCurrentLogo] = useState(null);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -19,7 +21,7 @@ const BackgroundEdit = ({ business, onBack, onSuccess }) => {
         vision: '',
         mission: '',
         contact: '',
-        logo: null
+        logo: undefined // Gunakan undefined bukan null
     });
 
     useEffect(() => {
@@ -36,10 +38,12 @@ const BackgroundEdit = ({ business, onBack, onSuccess }) => {
                 vision: business.vision || '',
                 mission: business.mission || '',
                 contact: business.contact || '',
-                logo: null
+                logo: undefined // Tetap undefined
             });
+            
             if (business.logo) {
                 setLogoPreview(`http://localhost:8000/storage/${business.logo}`);
+                setCurrentLogo(business.logo);
             }
         }
     }, [business]);
@@ -52,15 +56,13 @@ const BackgroundEdit = ({ business, onBack, onSuccess }) => {
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            // Validate file size (2MB max)
             if (file.size > 2 * 1024 * 1024) {
-                alert('Ukuran file maksimal 2MB');
+                toast.error('Ukuran file maksimal 2MB');
                 return;
             }
             
             setFormData(prev => ({ ...prev, logo: file }));
             
-            // Create preview
             const reader = new FileReader();
             reader.onload = (e) => {
                 setLogoPreview(e.target.result);
@@ -71,7 +73,8 @@ const BackgroundEdit = ({ business, onBack, onSuccess }) => {
 
     const removeLogo = () => {
         setFormData(prev => ({ ...prev, logo: null }));
-        setLogoPreview(business?.logo ? `http://localhost:8000/storage/${business.logo}` : null);
+        setLogoPreview(null);
+        setCurrentLogo(null);
     };
 
     const handleSubmit = async (e) => {
@@ -85,16 +88,26 @@ const BackgroundEdit = ({ business, onBack, onSuccess }) => {
                 throw new Error('User data not found');
             }
 
+            // Siapkan data untuk update
             const submitData = {
                 ...formData,
-                user_id: user.id
+                user_id: user.id,
+                // Jika logo undefined, jangan kirim field logo sama sekali
+                // Jika logo null, kirim null (hapus logo)
+                // Jika logo File, kirim file
             };
 
+            // Hapus field logo jika undefined (biarkan logo tetap)
+            if (submitData.logo === undefined) {
+                delete submitData.logo;
+            }
+
             console.log('Updating business data:', submitData);
-            const response = await backgroundApi.update(business.id, submitData); // ← Pakai backgroundApi
+
+            const response = await backgroundApi.update(business.id, submitData);
 
             if (response.data.status === 'success') {
-                alert('Data bisnis berhasil diperbarui!');
+                toast.success('Data bisnis berhasil diperbarui!');
                 onSuccess();
             } else {
                 throw new Error(response.data.message || 'Terjadi kesalahan');
@@ -106,12 +119,11 @@ const BackgroundEdit = ({ business, onBack, onSuccess }) => {
             if (error.response?.data?.message) {
                 errorMessage = error.response.data.message;
             } else if (error.response?.data?.errors) {
-                // Handle validation errors
                 const errors = Object.values(error.response.data.errors).flat();
                 errorMessage = errors.join(', ');
             }
             
-            alert(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -130,7 +142,7 @@ const BackgroundEdit = ({ business, onBack, onSuccess }) => {
             title="Edit Data Bisnis"
             subtitle="Perbarui informasi bisnis"
             formData={formData}
-            logoPreview={logoPreview}
+            logoPreview={logoPreview || (currentLogo ? `http://localhost:8000/storage/${currentLogo}` : null)}
             isLoading={isLoading}
             onInputChange={handleInputChange}
             onFileChange={handleFileChange}

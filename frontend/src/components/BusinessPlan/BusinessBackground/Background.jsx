@@ -3,7 +3,7 @@ import BackgroundList from './Background-List';
 import BackgroundCreate from './Background-Create';
 import BackgroundEdit from './Background-Edit';
 import BackgroundView from './Background-View';
-import { backgroundApi } from '../../../services/businessPlan'; 
+import { backgroundApi } from '../../../services/businessPlan';
 
 const Background = () => {
     const [businesses, setBusinesses] = useState([]);
@@ -17,12 +17,12 @@ const Background = () => {
         try {
             setIsLoading(true);
             setError(null);
-            
+
             console.log('Fetching businesses using API...');
             const response = await backgroundApi.getAll(); // ← Pakai backgroundApi
-            
+
             console.log('API Response:', response.data);
-            
+
             if (response.data.status === 'success') {
                 setBusinesses(response.data.data || []);
             } else {
@@ -30,7 +30,7 @@ const Background = () => {
             }
         } catch (error) {
             console.error('Error fetching businesses:', error);
-            
+
             let errorMessage = 'Gagal memuat data bisnis';
             if (error.response) {
                 // Server responded with error status
@@ -42,7 +42,7 @@ const Background = () => {
                 // Something else happened
                 errorMessage = error.message;
             }
-            
+
             setError(errorMessage);
         } finally {
             setIsLoading(false);
@@ -70,16 +70,11 @@ const Background = () => {
     };
 
     const handleDelete = async (businessId) => {
-        if (!confirm('Apakah Anda yakin ingin menghapus data bisnis ini?')) {
-            return;
-        }
-
         try {
             setError(null);
-            const response = await backgroundApi.delete(businessId); // ← Pakai backgroundApi
+            const response = await backgroundApi.delete(businessId);
 
             if (response.data.status === 'success') {
-                alert('Data bisnis berhasil dihapus!');
                 fetchBusinesses();
                 setView('list');
             } else {
@@ -88,12 +83,12 @@ const Background = () => {
         } catch (error) {
             console.error('Error deleting business:', error);
             let errorMessage = 'Terjadi kesalahan saat menghapus data bisnis';
-            
+
             if (error.response?.data?.message) {
                 errorMessage = error.response.data.message;
             }
-            
-            alert(errorMessage);
+
+            alert(errorMessage); 
         }
     };
 
