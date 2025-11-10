@@ -1,14 +1,17 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Lock, Eye, EyeOff, Sun, Moon, ArrowLeft } from "lucide-react";
 
 const ResetPassword = ({ isDarkMode, toggleDarkMode }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { resetPassword } = useAuth();
 
+  // Get reset_token dari location state (dari ForgotPassword setelah OTP verification)
+  const resetToken = location.state?.reset_token;
+
   const [formData, setFormData] = useState({
-    reset_token: "",
     password: "",
     password_confirmation: "",
   });
@@ -17,6 +20,13 @@ const ResetPassword = ({ isDarkMode, toggleDarkMode }) => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Redirect jika tidak ada reset token
+    if (!resetToken) {
+      navigate("/forgot-password");
+    }
+  }, [resetToken, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,14 +47,8 @@ const ResetPassword = ({ isDarkMode, toggleDarkMode }) => {
       return;
     }
 
-    if (!formData.reset_token) {
-      setError("Token reset tidak valid");
-      setIsLoading(false);
-      return;
-    }
-
     const response = await resetPassword({
-      reset_token: formData.reset_token,
+      reset_token: resetToken,
       password: formData.password,
       password_confirmation: formData.password_confirmation,
     });
@@ -52,8 +56,8 @@ const ResetPassword = ({ isDarkMode, toggleDarkMode }) => {
     setIsLoading(false);
 
     if (response.success) {
-      setMessage("Password berhasil direset. Silakan login dengan password baru.");
-      setTimeout(() => navigate("/login"), 3000);
+      setMessage("Password berhasil direset. Mengarahkan ke halaman login...");
+      setTimeout(() => navigate("/login"), 2000);
     } else {
       setError(response.message || "Terjadi kesalahan. Coba lagi nanti.");
     }
@@ -74,6 +78,32 @@ const ResetPassword = ({ isDarkMode, toggleDarkMode }) => {
     formData.password.length < 6 ? 'weak' : 
     formData.password.length < 10 ? 'medium' : 'strong' 
     : '';
+
+  if (!resetToken) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-md w-full text-center">
+          <div className="bg-white dark:bg-gray-800 py-8 px-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="text-red-600 dark:text-red-400" size={28} />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              Token Tidak Valid
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Token reset password tidak valid atau sudah kedaluwarsa.
+            </p>
+            <Link
+              to="/forgot-password"
+              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Minta Reset Password Kembali
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8">
@@ -135,7 +165,7 @@ const ResetPassword = ({ isDarkMode, toggleDarkMode }) => {
               Reset Password
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Masukkan password baru untuk akun Anda.
+              Buat password baru untuk akun Anda
             </p>
           </div>
 
@@ -160,28 +190,6 @@ const ResetPassword = ({ isDarkMode, toggleDarkMode }) => {
           <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
             <div>
               <label
-                htmlFor="reset_token"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                Token Reset
-              </label>
-              <input
-                id="reset_token"
-                name="reset_token"
-                type="text"
-                required
-                value={formData.reset_token}
-                onChange={handleChange}
-                className="w-full px-3 py-3 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm transition-colors"
-                placeholder="Masukkan token reset yang Anda terima"
-              />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Token reset dikirim setelah verifikasi OTP WhatsApp
-              </p>
-            </div>
-
-            <div>
-              <label
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
               >
@@ -197,6 +205,7 @@ const ResetPassword = ({ isDarkMode, toggleDarkMode }) => {
                   onChange={handleChange}
                   className="w-full px-3 py-3 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm pr-10 transition-colors"
                   placeholder="Minimal 8 karakter"
+                  autoFocus
                 />
                 <button
                   type="button"
@@ -278,7 +287,7 @@ const ResetPassword = ({ isDarkMode, toggleDarkMode }) => {
           {/* Info */}
           <div className="mt-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
             <p className="text-xs text-blue-800 dark:text-blue-300 text-center">
-              <strong>Info:</strong> Pastikan token reset yang Anda masukkan masih valid (berlaku 10 menit).
+              <strong>Tips:</strong> Gunakan kombinasi huruf, angka, dan simbol untuk password yang kuat.
             </p>
           </div>
 
