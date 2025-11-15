@@ -1,146 +1,161 @@
 import { useState, useEffect } from 'react';
-import { Save } from 'lucide-react';
-import FinancialPlanForm from './FinancialPlan-Form';
-import { financialPlanApi, backgroundApi } from '../../../services/businessPlan';
 import { toast } from 'react-toastify';
+import FinancialPlanForm from './FinancialPlan-Form';
+import { financialPlanApi } from '../../../services/businessPlan';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const FinancialPlanCreate = ({ onBack, onSuccess }) => {
+    const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingBusinesses, setIsLoadingBusinesses] = useState(false);
     const [businesses, setBusinesses] = useState([]);
-    const [isLoadingBusinesses, setIsLoadingBusinesses] = useState(true);
-
     const [formData, setFormData] = useState({
+        plan_name: '',
         business_background_id: '',
-        capital_source: 'Pribadi',
-        initial_capex: '',
-        monthly_operational_cost: '',
-        estimated_monthly_income: '',
-        notes: ''
+        capital_sources: [],
+        initial_capex: [],
+        monthly_opex: [],
+        sales_projections: [],
+        cash_flow_simulation: [],
+        tax_rate: 10,
+        interest_expense: 0,
+        plan_duration_months: 12,
+        notes: '',
+        status: 'draft'
     });
 
-    // Fetch business backgrounds untuk dropdown
-    const fetchBusinesses = async () => {
+    // Load businesses
+    useEffect(() => {
+        loadBusinesses();
+    }, []);
+
+    const loadBusinesses = async () => {
         try {
             setIsLoadingBusinesses(true);
-            const response = await backgroundApi.getAll();
-            
-            console.log('Business backgrounds response:', response);
+            const response = await financialPlanApi.getBusinesses({ user_id: user?.id });
             
             if (response.data && response.data.status === 'success') {
                 setBusinesses(response.data.data || []);
             } else {
-                throw new Error(response.data?.message || 'Failed to fetch business backgrounds');
+                setBusinesses([]);
             }
         } catch (error) {
-            console.error('Error fetching businesses:', error);
-            let errorMessage = 'Gagal memuat data bisnis';
+            console.error('Error loading businesses:', error);
             
-            if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            } else if (error.message) {
-                errorMessage = error.message;
+            if (error.response?.status === 401) {
+                toast.error('Sesi Anda telah berakhir. Silakan login kembali.');
+            } else {
+                toast.error('Gagal memuat data bisnis');
             }
-            
-            toast.error(errorMessage);
+            setBusinesses([]);
         } finally {
             setIsLoadingBusinesses(false);
         }
     };
 
-    useEffect(() => {
-        fetchBusinesses();
-    }, []);
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+    const handleInputChange = (name, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e, submitData) => {
         e.preventDefault();
         
-        console.log('Form data before submit:', formData);
-        
-        // Validasi: business background harus dipilih
-        if (!formData.business_background_id) {
+        // Validasi dasar
+        if (!submitData.plan_name?.trim()) {
+            toast.error('Nama rencana wajib diisi');
+            return;
+        }
+
+        if (!submitData.business_background_id) {
             toast.error('Pilih bisnis terlebih dahulu');
             return;
         }
 
-        // Validasi input angka
-        if (parseFloat(formData.initial_capex) < 0 || 
-            parseFloat(formData.monthly_operational_cost) < 0 || 
-            parseFloat(formData.estimated_monthly_income) < 0) {
-            toast.error('Nilai tidak boleh negatif');
+        if (!user?.id) {
+            toast.error('User tidak ditemukan. Silakan login ulang.');
             return;
         }
 
         setIsLoading(true);
 
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
-            
-            if (!user || !user.id) {
-                throw new Error('User data not found');
-            }
-
-            const submitData = {
-                ...formData,
+            // Format data
+            const finalData = {
                 user_id: user.id,
-                initial_capex: parseFloat(formData.initial_capex) || 0,
-                monthly_operational_cost: parseFloat(formData.monthly_operational_cost) || 0,
-                estimated_monthly_income: parseFloat(formData.estimated_monthly_income) || 0
+                business_background_id: submitData.business_background_id,
+                plan_name: submitData.plan_name.trim(),
+                capital_sources: Array.isArray(submitData.capital_sources) ? 
+                    submitData.capital_sources.filter(source => source.source && source.amount > 0) : [],
+                initial_capex: Array.isArray(submitData.initial_capex) ? 
+                    submitData.initial_capex.filter(item => item.category && item.amount > 0) : [],
+                monthly_opex: Array.isArray(submitData.monthly_opex) ? 
+                    submitData.monthly_opex.filter(item => item.category && item.amount > 0) : [],
+                sales_projections: Array.isArray(submitData.sales_projections) ? 
+                    submitData.sales_projections.filter(item => item.product && item.price > 0 && item.volume > 0) : [],
+                cash_flow_simulation: Array.isArray(submitData.cash_flow_simulation) ? 
+                    submitData.cash_flow_simulation.filter(item => 
+                        item.date && item.category && item.description && item.amount > 0
+                    ) : [],
+                tax_rate: submitData.tax_rate || 10,
+                interest_expense: submitData.interest_expense || 0,
+                plan_duration_months: submitData.plan_duration_months || 12,
+                notes: submitData.notes || '',
+                status: submitData.status || 'draft'
             };
 
-            console.log('Submitting financial plan data:', submitData);
+            const response = await financialPlanApi.create(finalData);
             
-            const response = await financialPlanApi.create(submitData);
-            console.log('Financial plan create response:', response);
-
-            // Handle different response structures
-            if (response.status === 'success' || (response.data && response.data.status === 'success')) {
+            if (response.data.status === 'success') {
                 toast.success('Rencana keuangan berhasil dibuat!');
+                // FIX: Panggil onSuccess untuk kembali ke list dan refresh data
                 onSuccess();
             } else {
-                const errorMessage = response.data?.message || response.message || 'Terjadi kesalahan';
-                throw new Error(errorMessage);
+                throw new Error(response.data.message || 'Gagal membuat rencana keuangan');
             }
         } catch (error) {
             console.error('Error creating financial plan:', error);
             
-            let errorMessage = 'Terjadi kesalahan saat membuat rencana keuangan';
-            
-            // Handle different error structures
-            if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            } else if (error.response?.data?.errors) {
-                const errors = Object.values(error.response.data.errors).flat();
-                errorMessage = errors.join(', ');
-            } else if (error.message) {
-                errorMessage = error.message;
-            } else if (error.data?.message) {
-                errorMessage = error.data.message;
+            if (error.response?.data?.errors) {
+                Object.values(error.response.data.errors).forEach(errorMessages => {
+                    errorMessages.forEach(message => {
+                        toast.error(message);
+                    });
+                });
+            } else if (error.response?.data?.message) {
+                toast.error(error.response.data.message);
+            } else if (error.request) {
+                toast.error('Tidak ada respon dari server. Periksa koneksi internet.');
+            } else {
+                toast.error('Terjadi kesalahan: ' + (error.message || 'Unknown error'));
             }
-            
-            toast.error(errorMessage);
         } finally {
             setIsLoading(false);
         }
     };
 
+    // FIX: Langsung gunakan onBack dari props tanpa wrapper function
+    // atau buat wrapper yang sederhana
+    const handleBack = () => {
+        console.log('🔙 Back to financial plans list via parent handler');
+        onBack(); // Langsung panggil onBack dari parent
+    };
+
     return (
         <FinancialPlanForm
-            title="Tambah Rencana Keuangan"
-            subtitle="Isi formulir untuk menambahkan rencana keuangan baru"
+            title="Buat Rencana Keuangan Baru"
+            subtitle="Isi form berikut untuk membuat rencana keuangan bisnis Anda"
             formData={formData}
             businesses={businesses}
             isLoadingBusinesses={isLoadingBusinesses}
             isLoading={isLoading}
             onInputChange={handleInputChange}
             onSubmit={handleSubmit}
-            onBack={onBack}
-            submitButtonText="Simpan Rencana"
-            submitButtonIcon={<Save size={16} />}
+            onBack={handleBack} // FIX: Gunakan handleBack yang memanggil onBack dari parent
+            submitButtonText="Buat Rencana"
+            submitButtonIcon={<span>💾</span>}
             mode="create"
         />
     );

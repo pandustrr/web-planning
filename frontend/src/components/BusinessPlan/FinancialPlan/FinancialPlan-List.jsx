@@ -1,6 +1,7 @@
-import { DollarSign, Building, Calendar, Plus, Eye, Edit3, Trash2, Loader, RefreshCw, TrendingUp, TrendingDown, Users, MapPin } from 'lucide-react';
-import { useState } from 'react';
+import { DollarSign, Building, Calendar, Plus, Eye, Edit3, Trash2, Loader, TrendingUp, TrendingDown, BarChart3, RefreshCw, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import FinancialPlanDashboardCharts from './FinancialPlan-DashboardCharts';
 
 const FinancialPlanList = ({
     plans,
@@ -10,13 +11,29 @@ const FinancialPlanList = ({
     onCreateNew,
     isLoading,
     error,
-    onRetry,
-    onBack
+    onRetry
 }) => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [planToDelete, setPlanToDelete] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [selectedBusiness, setSelectedBusiness] = useState('all');
+    const [selectedStatus, setSelectedStatus] = useState('all');
+    const [safePlans, setSafePlans] = useState([]);
+
+    // Ensure plans is always an array
+    useEffect(() => {
+        if (Array.isArray(plans)) {
+            setSafePlans(plans);
+        } else if (plans && plans.data && Array.isArray(plans.data)) {
+            // Handle paginated response
+            setSafePlans(plans.data);
+        } else if (plans && Array.isArray(plans.data?.data)) {
+            // Handle nested data structure
+            setSafePlans(plans.data.data);
+        } else {
+            setSafePlans([]);
+        }
+    }, [plans]);
 
     const handleDeleteClick = (planId, planName) => {
         setPlanToDelete({ id: planId, name: planName });
@@ -29,20 +46,9 @@ const FinancialPlanList = ({
         setIsDeleting(true);
         try {
             await onDelete(planToDelete.id);
-            toast.success('Rencana keuangan berhasil dihapus!', {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-            });
+            toast.success('Rencana keuangan berhasil dihapus!');
         } catch (error) {
-            console.error('Error in FinancialPlanList delete:', error);
-            toast.error('Gagal menghapus rencana keuangan!', {
-                position: "top-right",
-                autoClose: 3000,
-            });
+            toast.error('Gagal menghapus rencana keuangan!');
         } finally {
             setIsDeleting(false);
             setShowDeleteModal(false);
@@ -57,80 +63,68 @@ const FinancialPlanList = ({
 
     // Get unique businesses for filter
     const getUniqueBusinesses = () => {
-        const businesses = plans
-            .filter(plan => plan.business_background && plan.business_background.id)
+        const businesses = safePlans
+            .filter(plan => {
+                return plan.business_background && 
+                       plan.business_background.id && 
+                       plan.business_background.name;
+            })
             .map(plan => ({
                 id: plan.business_background.id,
                 name: plan.business_background.name,
                 category: plan.business_background.category || 'Tidak ada kategori'
             }));
-
+        
         // Remove duplicates
-        return businesses.filter((business, index, self) =>
+        return businesses.filter((business, index, self) => 
             index === self.findIndex(b => b.id === business.id)
         );
     };
 
-    const filteredPlans = selectedBusiness === 'all'
-        ? plans
-        : plans.filter(plan =>
-            plan.business_background?.id === selectedBusiness
-        );
+    const filteredPlans = safePlans.filter(plan => {
+        const businessMatch = selectedBusiness === 'all' || 
+            plan.business_background?.id === selectedBusiness;
+        const statusMatch = selectedStatus === 'all' || 
+            plan.status === selectedStatus;
+        
+        return businessMatch && statusMatch;
+    });
 
     const uniqueBusinesses = getUniqueBusinesses();
 
-    // Helper function untuk mengakses business background
-    const getBusinessInfo = (plan) => {
-        if (!plan.business_background) {
-            return {
-                name: `Bisnis (ID: ${plan.business_background_id})`,
-                category: 'Tidak ada kategori',
-                location: 'Lokasi tidak tersedia'
-            };
-        }
-
-        return {
-            name: plan.business_background.name || `Bisnis (ID: ${plan.business_background_id})`,
-            category: plan.business_background.category || 'Tidak ada kategori',
-            location: plan.business_background.location || 'Lokasi tidak tersedia'
-        };
-    };
-
-    const getCapitalSourceBadge = (source) => {
-        const sourceConfig = {
-            'Pribadi': { color: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300', icon: Users },
-            'Pinjaman': { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', icon: TrendingUp },
-            'Investor': { color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300', icon: DollarSign }
+    const getStatusBadge = (status) => {
+        const statusConfig = {
+            draft: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300', label: 'Draft' },
+            active: { color: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300', label: 'Aktif' },
+            completed: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300', label: 'Selesai' }
         };
 
-        const config = sourceConfig[source] || sourceConfig.Pribadi;
-        const Icon = config.icon;
-
+        const config = statusConfig[status] || statusConfig.draft;
         return (
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color} flex items-center gap-1 w-fit`}>
-                <Icon size={12} />
-                {source}
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+                {config.label}
             </span>
         );
     };
 
-    const getProfitLossBadge = (amount) => {
-        const isProfit = amount >= 0;
-        const config = isProfit
-            ? { color: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300', icon: TrendingUp, label: 'Laba' }
-            : { color: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300', icon: TrendingDown, label: 'Rugi' };
+    const getFeasibilityBadge = (status) => {
+        const feasibilityConfig = {
+            'Layak': { color: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' },
+            'Cukup Layak': { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300' },
+            'Tidak Layak': { color: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300' }
+        };
 
-        const Icon = config.icon;
-
+        const config = feasibilityConfig[status] || { color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300' };
         return (
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color} flex items-center gap-1 w-fit`}>
-                <Icon size={12} />
-                {config.label}: {formatCurrency(Math.abs(amount))}
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+                {status}
             </span>
         );
     };
 
     const formatCurrency = (amount) => {
+        if (!amount && amount !== 0) return 'Rp 0';
+        
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
             currency: 'IDR',
@@ -139,27 +133,37 @@ const FinancialPlanList = ({
         }).format(amount);
     };
 
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-        });
+    // Calculate safe averages and totals
+    const calculateAverageRoi = () => {
+        if (safePlans.length === 0) return 0;
+        const totalRoi = safePlans.reduce((acc, plan) => acc + (plan.roi_percentage || 0), 0);
+        return Math.round(totalRoi / safePlans.length);
     };
 
-    // LOADING STATE
+    const calculateTotalMonthlyIncome = () => {
+        return safePlans.reduce((acc, plan) => acc + (plan.total_monthly_income || 0), 0);
+    };
+
+    const countLayakPlans = () => {
+        return safePlans.filter(p => p.feasibility_status === 'Layak').length;
+    };
+
+    const countTidakLayakPlans = () => {
+        return safePlans.filter(p => p.feasibility_status === 'Tidak Layak').length;
+    };
+
     if (isLoading) {
         return (
             <div className="space-y-6">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Rencana Keuangan</h1>
-                        <p className="text-gray-600 dark:text-gray-400">Kelola sumber modal, estimasi biaya, dan analisis keuangan</p>
+                        <p className="text-gray-600 dark:text-gray-400">Kelola rencana dan analisis keuangan usaha</p>
                     </div>
                 </div>
                 <div className="flex justify-center items-center h-64">
                     <div className="text-center">
-                        <Loader className="animate-spin h-8 w-8 text-green-600 mx-auto mb-4" />
+                        <Loader className="animate-spin h-8 w-8 text-indigo-600 mx-auto mb-4" />
                         <p className="text-gray-600 dark:text-gray-400">Memuat data...</p>
                     </div>
                 </div>
@@ -167,14 +171,13 @@ const FinancialPlanList = ({
         );
     }
 
-    // ERROR STATE
     if (error) {
         return (
             <div className="space-y-6">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Rencana Keuangan</h1>
-                        <p className="text-gray-600 dark:text-gray-400">Kelola sumber modal, estimasi biaya, dan analisis keuangan</p>
+                        <p className="text-gray-600 dark:text-gray-400">Kelola rencana dan analisis keuangan usaha</p>
                     </div>
                 </div>
                 <div className="text-center py-12">
@@ -189,7 +192,7 @@ const FinancialPlanList = ({
                     </p>
                     <button
                         onClick={onRetry}
-                        className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors mx-auto"
+                        className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors mx-auto"
                     >
                         <RefreshCw size={16} />
                         Coba Lagi
@@ -201,7 +204,7 @@ const FinancialPlanList = ({
 
     return (
         <div className="space-y-6">
-            {/* Modal Konfirmasi Delete */}
+            {/* Delete Confirmation Modal */}
             {showDeleteModal && (
                 <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/40">
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.25)] border border-gray-200 dark:border-gray-700 max-w-md w-full p-6 transition-all duration-300">
@@ -213,7 +216,7 @@ const FinancialPlanList = ({
                                 onClick={handleCancelDelete}
                                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                             >
-                                <Trash2 size={20} />
+                                <X size={20} />
                             </button>
                         </div>
 
@@ -259,214 +262,373 @@ const FinancialPlanList = ({
                 </div>
             )}
 
-            {/* HEADER */}
-            <div className="flex justify-between items-center">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Rencana Keuangan</h1>
-                    <p className="text-gray-600 dark:text-gray-400">Kelola sumber modal, estimasi biaya, dan analisis keuangan</p>
+                    <p className="text-gray-600 dark:text-gray-400">Kelola rencana dan analisis keuangan usaha</p>
                 </div>
                 <button
                     onClick={onCreateNew}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
                     <Plus size={20} />
-                    Tambah Rencana
+                    Buat Rencana Baru
                 </button>
             </div>
 
-            {/* FILTER SECTION */}
-            {plans.length > 0 && uniqueBusinesses.length > 0 && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                    <h3 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                        <Building size={16} />
-                        Filter Berdasarkan Bisnis:
-                    </h3>
+            {/* Quick Stats */}
+            {safePlans.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Rencana</p>
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white">{safePlans.length}</p>
+                            </div>
+                            <BarChart3 className="w-8 h-8 text-blue-600" />
+                        </div>
+                    </div>
                     
-                    <div className="flex flex-wrap gap-2">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Rata-rata ROI</p>
+                                <p className="text-2xl font-bold text-green-600">
+                                    {calculateAverageRoi()}%
+                                </p>
+                            </div>
+                            <TrendingUp className="w-8 h-8 text-green-600" />
+                        </div>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Layak</p>
+                                <p className="text-2xl font-bold text-green-600">
+                                    {countLayakPlans()}
+                                </p>
+                            </div>
+                            <TrendingUp className="w-8 h-8 text-green-600" />
+                        </div>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Tidak Layak</p>
+                                <p className="text-2xl font-bold text-red-600">
+                                    {countTidakLayakPlans()}
+                                </p>
+                            </div>
+                            <TrendingDown className="w-8 h-8 text-red-600" />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Dashboard Charts */}
+            {safePlans.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                    <FinancialPlanDashboardCharts plans={safePlans} />
+                </div>
+            )}
+
+            {/* FILTER BUTTONS - Horizontal */}
+            {safePlans.length > 0 && uniqueBusinesses.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                        <h3 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                            <Building size={16} />
+                            Filter Berdasarkan Bisnis:
+                        </h3>
+                        {(selectedBusiness !== 'all' || selectedStatus !== 'all') && (
+                            <button
+                                onClick={() => {
+                                    setSelectedBusiness('all');
+                                    setSelectedStatus('all');
+                                }}
+                                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 w-full sm:w-auto text-left sm:text-center"
+                            >
+                                Reset Semua Filter
+                            </button>
+                        )}
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        {/* Tombol Semua Bisnis */}
                         <button
                             onClick={() => setSelectedBusiness('all')}
-                            className={`px-3 py-2 rounded-lg border transition-all duration-200 text-sm flex items-center gap-2 ${
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm ${
                                 selectedBusiness === 'all'
                                     ? 'bg-green-500 border-green-500 text-white shadow-sm'
                                     : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                             }`}
                         >
                             <Building size={14} />
-                            Semua Bisnis
+                            <span>Semua Bisnis</span>
                             <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                                selectedBusiness === 'all'
-                                    ? 'bg-green-600 text-white'
+                                selectedBusiness === 'all' 
+                                    ? 'bg-green-600 text-white' 
                                     : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
                             }`}>
-                                {plans.length}
+                                {safePlans.length}
                             </span>
                         </button>
 
+                        {/* Tombol untuk setiap bisnis */}
                         {uniqueBusinesses.map(business => (
                             <button
                                 key={business.id}
                                 onClick={() => setSelectedBusiness(business.id)}
-                                className={`px-3 py-2 rounded-lg border transition-all duration-200 text-sm flex items-center gap-2 ${
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm ${
                                     selectedBusiness === business.id
                                         ? 'bg-blue-500 border-blue-500 text-white shadow-sm'
                                         : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                                 }`}
                             >
                                 <Building size={14} />
-                                {business.name}
+                                <div className="text-left">
+                                    <div className="font-medium">{business.name}</div>
+                                    <div className="text-xs opacity-80 hidden sm:block">{business.category}</div>
+                                </div>
                                 <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                                    selectedBusiness === business.id
-                                        ? 'bg-blue-600 text-white'
+                                    selectedBusiness === business.id 
+                                        ? 'bg-blue-600 text-white' 
                                         : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
                                 }`}>
-                                    {plans.filter(p => p.business_background?.id === business.id).length}
+                                    {safePlans.filter(p => p.business_background?.id === business.id).length}
                                 </span>
                             </button>
                         ))}
                     </div>
 
-                    {selectedBusiness !== 'all' && (
+                    {/* Status Filter */}
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            onClick={() => setSelectedStatus('all')}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm ${
+                                selectedStatus === 'all'
+                                    ? 'bg-purple-500 border-purple-500 text-white shadow-sm'
+                                    : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            }`}
+                        >
+                            <span>Semua Status</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                selectedStatus === 'all' 
+                                    ? 'bg-purple-600 text-white' 
+                                    : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                            }`}>
+                                {safePlans.length}
+                            </span>
+                        </button>
+
+                        <button
+                            onClick={() => setSelectedStatus('draft')}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm ${
+                                selectedStatus === 'draft'
+                                    ? 'bg-yellow-500 border-yellow-500 text-white shadow-sm'
+                                    : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            }`}
+                        >
+                            <span>Draft</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                selectedStatus === 'draft' 
+                                    ? 'bg-yellow-600 text-white' 
+                                    : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                            }`}>
+                                {safePlans.filter(p => p.status === 'draft').length}
+                            </span>
+                        </button>
+
+                        <button
+                            onClick={() => setSelectedStatus('active')}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm ${
+                                selectedStatus === 'active'
+                                    ? 'bg-green-500 border-green-500 text-white shadow-sm'
+                                    : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            }`}
+                        >
+                            <span>Aktif</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                selectedStatus === 'active' 
+                                    ? 'bg-green-600 text-white' 
+                                    : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                            }`}>
+                                {safePlans.filter(p => p.status === 'active').length}
+                            </span>
+                        </button>
+
+                        <button
+                            onClick={() => setSelectedStatus('completed')}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm ${
+                                selectedStatus === 'completed'
+                                    ? 'bg-blue-500 border-blue-500 text-white shadow-sm'
+                                    : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            }`}
+                        >
+                            <span>Selesai</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                selectedStatus === 'completed' 
+                                    ? 'bg-blue-600 text-white' 
+                                    : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                            }`}>
+                                {safePlans.filter(p => p.status === 'completed').length}
+                            </span>
+                        </button>
+                    </div>
+
+                    {/* Filter Info */}
+                    {(selectedBusiness !== 'all' || selectedStatus !== 'all') && (
                         <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                            <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300 text-sm">
-                                <Building size={16} />
-                                <span>
-                                    Menampilkan {filteredPlans.length} dari {plans.length} rencana keuangan untuk{' '}
-                                    <strong>{uniqueBusinesses.find(b => b.id === selectedBusiness)?.name}</strong>
-                                </span>
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300 text-sm">
+                                    <Building size={16} />
+                                    <span>
+                                        Menampilkan {filteredPlans.length} dari {safePlans.length} rencana keuangan
+                                        {selectedBusiness !== 'all' && (
+                                            <span> untuk <strong>{uniqueBusinesses.find(b => b.id === selectedBusiness)?.name}</strong></span>
+                                        )}
+                                        {selectedStatus !== 'all' && (
+                                            <span> dengan status <strong>
+                                                {selectedStatus === 'draft' ? 'Draft' : 
+                                                 selectedStatus === 'active' ? 'Aktif' : 'Selesai'}
+                                            </strong></span>
+                                        )}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     )}
                 </div>
             )}
 
-            {/* CARD LIST */}
-            {plans.length === 0 ? (
+            {/* Plans List */}
+            {safePlans.length === 0 ? (
                 <div className="text-center py-12">
                     <DollarSign size={64} className="mx-auto text-gray-400 mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Belum ada rencana keuangan</h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">Mulai dengan menambahkan rencana keuangan pertama Anda</p>
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">Mulai dengan membuat rencana keuangan pertama Anda</p>
                     <button
                         onClick={onCreateNew}
-                        className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+                        className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
                     >
-                        Tambah Rencana Pertama
+                        Buat Rencana Pertama
                     </button>
                 </div>
             ) : filteredPlans.length === 0 ? (
                 <div className="text-center py-12">
                     <Building size={64} className="mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Tidak ada rencana keuangan untuk bisnis ini</h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">Tidak ditemukan rencana keuangan untuk bisnis yang dipilih</p>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Tidak ada rencana keuangan yang sesuai filter</h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">Tidak ditemukan rencana keuangan untuk filter yang dipilih</p>
                     <button
-                        onClick={() => setSelectedBusiness('all')}
-                        className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+                        onClick={() => {
+                            setSelectedBusiness('all');
+                            setSelectedStatus('all');
+                        }}
+                        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
                     >
                         Lihat Semua Rencana
                     </button>
                 </div>
             ) : (
-                <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredPlans.map((plan) => {
-                            const businessInfo = getBusinessInfo(plan);
-                            const profitLoss = plan.profit_loss_estimation || (plan.estimated_monthly_income - plan.monthly_operational_cost);
-                            
-                            return (
-                                <div key={plan.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
-                                    {/* Header dengan info bisnis */}
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/20 rounded-lg flex items-center justify-center border border-indigo-200 dark:border-indigo-800">
-                                                <DollarSign className="text-indigo-600 dark:text-indigo-400" size={24} />
-                                            </div>
-                                            <div>
-                                                <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1">
-                                                    {businessInfo.name}
-                                                </h3>
-                                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                    {businessInfo.category}
-                                                </p>
-                                            </div>
+                <div className="grid gap-6">
+                    {filteredPlans.map((plan) => (
+                        <div key={plan.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                            {plan.plan_name}
+                                        </h3>
+                                        {getStatusBadge(plan.status)}
+                                        {getFeasibilityBadge(plan.feasibility_status)}
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                        <div className="flex items-center gap-1">
+                                            <Building size={14} />
+                                            <span>{plan.business_background?.name || 'N/A'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Calendar size={14} />
+                                            <span>Dibuat: {new Date(plan.created_at).toLocaleDateString('id-ID')}</span>
                                         </div>
                                     </div>
 
-                                    {/* Info Lokasi */}
-                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
-                                        <MapPin size={14} />
-                                        <span className="line-clamp-1">{businessInfo.location}</span>
-                                    </div>
-
-                                    {/* Badges */}
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        {getCapitalSourceBadge(plan.capital_source)}
-                                        {getProfitLossBadge(profitLoss)}
-                                    </div>
-
-                                    {/* Detail Keuangan */}
-                                    <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                        <div className="flex justify-between items-center">
-                                            <span>Modal Awal:</span>
-                                            <span className="font-semibold text-gray-900 dark:text-white">
-                                                {formatCurrency(plan.initial_capex)}
-                                            </span>
+                                    {/* Financial Metrics */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                        <div>
+                                            <p className="text-gray-500 dark:text-gray-400">Modal Awal</p>
+                                            <p className="font-semibold text-gray-900 dark:text-white">
+                                                {formatCurrency(plan.total_initial_capital)}
+                                            </p>
                                         </div>
-                                        <div className="flex justify-between items-center">
-                                            <span>Biaya Operasional:</span>
-                                            <span className="font-semibold text-orange-600 dark:text-orange-400">
-                                                {formatCurrency(plan.monthly_operational_cost)}/bulan
-                                            </span>
+                                        <div>
+                                            <p className="text-gray-500 dark:text-gray-400">Pendapatan/Bln</p>
+                                            <p className="font-semibold text-green-600">
+                                                {formatCurrency(plan.total_monthly_income)}
+                                            </p>
                                         </div>
-                                        <div className="flex justify-between items-center">
-                                            <span>Estimasi Pendapatan:</span>
-                                            <span className="font-semibold text-green-600 dark:text-green-400">
-                                                {formatCurrency(plan.estimated_monthly_income)}/bulan
-                                            </span>
+                                        <div>
+                                            <p className="text-gray-500 dark:text-gray-400">Laba Bersih</p>
+                                            <p className={`font-semibold ${(plan.net_profit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                {formatCurrency(plan.net_profit)}
+                                            </p>
                                         </div>
-                                    </div>
-
-                                    {/* Tanggal Dibuat */}
-                                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-4">
-                                        <Calendar size={12} />
-                                        <span>Dibuat: {formatDate(plan.created_at)}</span>
-                                    </div>
-
-                                    {/* Action Buttons */}
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => onView(plan)}
-                                            className="flex-1 bg-blue-600 text-white py-2 px-3 rounded text-sm hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
-                                        >
-                                            <Eye size={16} />
-                                            Lihat
-                                        </button>
-                                        <button
-                                            onClick={() => onEdit(plan)}
-                                            className="flex-1 bg-yellow-600 text-white py-2 px-3 rounded text-sm hover:bg-yellow-700 transition-colors flex items-center justify-center gap-1"
-                                        >
-                                            <Edit3 size={16} />
-                                            Edit
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteClick(plan.id, businessInfo.name)}
-                                            className="flex-1 bg-red-600 text-white py-2 px-3 rounded text-sm hover:bg-red-700 transition-colors flex items-center justify-center gap-1"
-                                        >
-                                            <Trash2 size={16} />
-                                            Hapus
-                                        </button>
+                                        <div>
+                                            <p className="text-gray-500 dark:text-gray-400">ROI</p>
+                                            <p className={`font-semibold ${(plan.roi_percentage || 0) >= 15 ? 'text-green-600' : (plan.roi_percentage || 0) >= 5 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                                {plan.roi_percentage || 0}%
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
-                            );
-                        })}
-                    </div>
 
-                    {/* Info Jumlah Data */}
-                    <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-                        Menampilkan {filteredPlans.length} dari {plans.length} rencana keuangan
-                        {selectedBusiness !== 'all' && (
-                            <span> untuk <strong>{uniqueBusinesses.find(b => b.id === selectedBusiness)?.name}</strong></span>
-                        )}
-                    </div>
-                </>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => onView(plan)}
+                                        className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                        title="Lihat Detail"
+                                    >
+                                        <Eye size={18} />
+                                    </button>
+                                    <button
+                                        onClick={() => onEdit(plan)}
+                                        className="p-2 text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-300 transition-colors rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
+                                        title="Edit"
+                                    >
+                                        <Edit3 size={18} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteClick(plan.id, plan.plan_name)}
+                                        className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                                        title="Hapus"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Results Info */}
+            {filteredPlans.length > 0 && (
+                <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+                    Menampilkan {filteredPlans.length} dari {safePlans.length} rencana keuangan
+                    {selectedBusiness !== 'all' && (
+                        <span> untuk <strong>{uniqueBusinesses.find(b => b.id === selectedBusiness)?.name}</strong></span>
+                    )}
+                    {selectedStatus !== 'all' && (
+                        <span> dengan status <strong>
+                            {selectedStatus === 'draft' ? 'Draft' : 
+                             selectedStatus === 'active' ? 'Aktif' : 'Selesai'}
+                        </strong></span>
+                    )}
+                </div>
             )}
         </div>
     );

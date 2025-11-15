@@ -92,15 +92,29 @@ Route::prefix('team-structure')->group(function () {
     Route::post('/{id}/upload-photo', [TeamStructureController::class, 'uploadPhoto']);
 });
 
-// Financial Plan
-Route::prefix('financial-plans')->group(function () {
-    Route::get('/', [FinancialPlanController::class, 'index']);
-    Route::post('/', [FinancialPlanController::class, 'store']);
-    Route::get('/summary', [FinancialPlanController::class, 'getFinancialSummary']);
-    Route::get('/{id}', [FinancialPlanController::class, 'show']);
-    Route::put('/{id}', [FinancialPlanController::class, 'update']);
-    Route::delete('/{id}', [FinancialPlanController::class, 'destroy']);
-});
+    // Financial Plan Routes
+    Route::prefix('financial-plans')->group(function () {
+        // Basic CRUD
+        Route::get('/', [FinancialPlanController::class, 'index']);
+        Route::post('/', [FinancialPlanController::class, 'store']);
+        Route::get('/{id}', [FinancialPlanController::class, 'show']);
+        Route::put('/{id}', [FinancialPlanController::class, 'update']);
+        Route::delete('/{id}', [FinancialPlanController::class, 'destroy']);
+
+        // Summary & Analytics
+        Route::get('/summary/financial', [FinancialPlanController::class, 'getFinancialSummary']);
+        Route::get('/dashboard/charts', [FinancialPlanController::class, 'getDashboardCharts']);
+
+        // Features
+        Route::get('/{id}/cash-flow', [FinancialPlanController::class, 'getCashFlowSimulation']);
+        Route::get('/{id}/feasibility', [FinancialPlanController::class, 'getFeasibilityAnalysis']);
+        Route::get('/{id}/forecast', [FinancialPlanController::class, 'getFinancialForecast']);
+        Route::get('/{id}/sensitivity', [FinancialPlanController::class, 'getSensitivityAnalysis']);
+
+        // Reports & Charts
+        Route::get('/{id}/report', [FinancialPlanController::class, 'generateReport']);
+        Route::get('/{id}/charts', [FinancialPlanController::class, 'getChartData']);
+    });
 
 // Route::get('/executive-summary', [ExecutiveSummaryController::class, 'index']);
 Route::get('/executive-summary/{userId}', [ExecutiveSummaryController::class, 'index']);

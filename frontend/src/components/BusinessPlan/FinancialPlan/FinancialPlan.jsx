@@ -3,11 +3,12 @@ import FinancialPlanList from './FinancialPlan-List';
 import FinancialPlanCreate from './FinancialPlan-Create';
 import FinancialPlanEdit from './FinancialPlan-Edit';
 import FinancialPlanView from './FinancialPlan-View';
-import FinancialPlanForm from './FinancialPlan-Form';
 import { financialPlanApi } from '../../../services/businessPlan';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../../contexts/AuthContext';
 
-const FinancialPlan = ({ onBack }) => {
+const FinancialPlan = () => {
+    const { user } = useAuth();
     const [plans, setPlans] = useState([]);
     const [currentPlan, setCurrentPlan] = useState(null);
     const [view, setView] = useState('list');
@@ -20,27 +21,22 @@ const FinancialPlan = ({ onBack }) => {
             setIsLoading(true);
             setError(null);
 
-            const user = JSON.parse(localStorage.getItem('user'));
-            
             const response = await financialPlanApi.getAll({ 
-                user_id: user?.id
+                user_id: user?.id 
             });
 
-            if (response.status === 'success') {
-                setPlans(response.data || []);
+            if (response.data.status === 'success') {
+                setPlans(response.data.data || []);
             } else {
-                throw new Error(response.message || 'Failed to fetch financial plans');
+                throw new Error(response.data.message || 'Failed to fetch financial plans');
             }
         } catch (error) {
+            console.error('Error fetching financial plans:', error);
+            
             let errorMessage = 'Gagal memuat data rencana keuangan';
-            if (error.response) {
-                errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
-            } else if (error.request) {
-                errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
-            } else {
-                errorMessage = error.message;
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
             }
-
             setError(errorMessage);
             toast.error(errorMessage);
         } finally {
@@ -49,10 +45,12 @@ const FinancialPlan = ({ onBack }) => {
     };
 
     useEffect(() => {
-        fetchPlans();
-    }, []);
+        if (user?.id) {
+            fetchPlans();
+        }
+    }, [user]);
 
-    // Handler functions
+    // Handler functions - SEDERHANA SEPERTI TEAM STRUCTURE
     const handleCreateNew = () => {
         setCurrentPlan(null);
         setView('create');
@@ -70,26 +68,21 @@ const FinancialPlan = ({ onBack }) => {
 
     const handleDelete = async (planId) => {
         try {
-            setError(null);
-            const user = JSON.parse(localStorage.getItem('user'));
-            const response = await financialPlanApi.delete(planId, user?.id);
+            const response = await financialPlanApi.delete(planId);
 
-            if (response.status === 'success') {
+            if (response.data.status === 'success') {
                 toast.success('Rencana keuangan berhasil dihapus!');
                 fetchPlans();
-                setView('list');
             } else {
-                throw new Error(response.message || 'Failed to delete financial plan');
+                throw new Error(response.data.message || 'Failed to delete financial plan');
             }
         } catch (error) {
-            let errorMessage = 'Terjadi kesalahan saat menghapus data rencana keuangan';
-            if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            }
-            toast.error(errorMessage);
+            console.error('Error deleting financial plan:', error);
+            toast.error('Gagal menghapus rencana keuangan');
         }
     };
 
+    // FIX: Simple back handler - TIDAK ADA LOGIC KOMPLEKS
     const handleBackToList = () => {
         setView('list');
         setCurrentPlan(null);
@@ -114,7 +107,7 @@ const FinancialPlan = ({ onBack }) => {
     if (isLoading && view === 'list') {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-6">
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-center items-center h-64">
                         <div className="text-center">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
@@ -140,7 +133,6 @@ const FinancialPlan = ({ onBack }) => {
                         isLoading={isLoading}
                         error={error}
                         onRetry={handleRetry}
-                        onBack={onBack}
                     />
                 );
             case 'create':
@@ -177,7 +169,6 @@ const FinancialPlan = ({ onBack }) => {
                         isLoading={isLoading}
                         error={error}
                         onRetry={handleRetry}
-                        onBack={onBack}
                     />
                 );
         }
