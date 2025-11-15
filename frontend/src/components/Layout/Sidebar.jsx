@@ -13,6 +13,7 @@ import {
   Building,
   Package,
   FileChartColumnIncreasing,
+  Users, 
 } from "lucide-react";
 
 const Sidebar = ({
@@ -46,37 +47,37 @@ const Sidebar = ({
           label: "Latar Belakang Bisnis",
           icon: Building,
         },
-
-        { id: "market-analysis", 
+        { 
+          id: "market-analysis", 
           label: "Analisis Pasar", 
-          icon: BarChart3 },
-
-        { id: "product-service", 
+          icon: BarChart3 
+        },
+        { 
+          id: "product-service", 
           label: "Produk & Layanan", 
-          icon: Package },
-          
+          icon: Package 
+        },
         { 
           id: "marketing-strategies", 
           label: "Strategi Pemasaran", 
           icon: FileChartColumnIncreasing
         },
-        {
-          id: "operational-plan",
-          label: "Rencana Operasional",
-          icon: Workflow,
+        { 
+          id: 'operational-plan', 
+          label: 'Rencana Operasional', 
+          icon: Workflow 
         },
-        {
-          id: "executive-summary",
-          label: "Executive Summary",
-          icon: Files,
+        { 
+          id: 'team-structure', 
+          label: 'Struktur Organisasi & Tim', 
+          icon: Users 
+        },
+        { 
+          id: 'financial-plan', 
+          label: 'Rencana Keuangan', 
+          icon: DollarSign 
         },
       ],
-    },
-    {
-      id: "financial",
-      label: "Manajemen Keuangan",
-      icon: DollarSign,
-      description: "Kelola keuangan bisnis",
     },
     {
       id: "forecast",
@@ -121,21 +122,26 @@ const Sidebar = ({
     }
   };
 
+  // Check if any sub item is active
+  const isAnySubItemActive = (subItems) => {
+    return subItems.some(subItem => subItem.id === activeSubSection);
+  };
+
   return (
     <>
       {/* Sidebar */}
       <div
         className={`
-                fixed lg:static inset-y-0 left-0 z-50
-                bg-white dark:bg-gray-800 shadow-lg lg:shadow-xl min-h-screen
-                transition-all duration-300 ease-in-out
-                ${
-                  isOpen
-                    ? "w-64 translate-x-0"
-                    : "-translate-x-full lg:translate-x-0 lg:w-20"
-                }
-                flex flex-col
-            `}
+          fixed lg:static inset-y-0 left-0 z-50
+          bg-white dark:bg-gray-800 shadow-lg lg:shadow-xl min-h-screen
+          transition-all duration-300 ease-in-out
+          ${
+            isOpen
+              ? "w-64 translate-x-0"
+              : "-translate-x-full lg:translate-x-0 lg:w-20"
+          }
+          flex flex-col
+        `}
       >
         {/* Logo Section */}
         <div className="p-4 lg:p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
@@ -197,6 +203,7 @@ const Sidebar = ({
             const isActive = activeSection === item.id;
             const hasSubItems = item.subItems && item.subItems.length > 0;
             const isBusinessPlanActive = activeSection === "business-plan";
+            const hasActiveSubItem = hasSubItems && isAnySubItemActive(item.subItems);
 
             return (
               <div key={item.id} className="space-y-1">
@@ -204,7 +211,7 @@ const Sidebar = ({
                 <button
                   onClick={() => handleMenuClick(item.id)}
                   className={`w-full flex items-center p-3 rounded-lg transition-all duration-200 group ${
-                    isActive
+                    isActive || (hasSubItems && hasActiveSubItem)
                       ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800"
                       : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
                   }`}
@@ -212,7 +219,7 @@ const Sidebar = ({
                   <Icon
                     size={20}
                     className={`shrink-0 ${
-                      isActive
+                      isActive || (hasSubItems && hasActiveSubItem)
                         ? "text-green-600 dark:text-green-400"
                         : "text-gray-400 dark:text-gray-500"
                     }`}
@@ -221,14 +228,14 @@ const Sidebar = ({
                   {/* Menu Text */}
                   <div
                     className={`
-                                        text-left ml-3 flex-1
-                                        transition-all duration-200
-                                        ${
-                                          isOpen
-                                            ? "opacity-100 block"
-                                            : "lg:opacity-0 lg:absolute lg:-left-96"
-                                        }
-                                    `}
+                      text-left ml-3 flex-1
+                      transition-all duration-200
+                      ${
+                        isOpen
+                          ? "opacity-100 block"
+                          : "lg:opacity-0 lg:absolute lg:-left-96"
+                      }
+                    `}
                   >
                     <div className="font-medium">{item.label}</div>
                     {isOpen && item.description && (
@@ -251,7 +258,7 @@ const Sidebar = ({
                   )}
 
                   {/* Active indicator for collapsed state */}
-                  {isActive && !isOpen && !isMobile && (
+                  {(isActive || (hasSubItems && hasActiveSubItem)) && !isOpen && !isMobile && (
                     <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-green-600 dark:bg-green-400 rounded-r"></div>
                   )}
 
@@ -260,20 +267,20 @@ const Sidebar = ({
                     <ChevronRight
                       size={16}
                       className={`
-                            shrink-0 transition-transform duration-200 ml-2
-                            ${
-                              isActive
-                                ? "text-green-600 dark:text-green-400 rotate-90"
-                                : "text-gray-400 dark:text-gray-500"
-                            }
-                            ${isOpen ? "opacity-100" : "lg:opacity-0"}
-                        `}
+                        shrink-0 transition-transform duration-200 ml-2
+                        ${
+                          (isActive || hasActiveSubItem)
+                            ? "text-green-600 dark:text-green-400 rotate-90"
+                            : "text-gray-400 dark:text-gray-500"
+                        }
+                        ${isOpen ? "opacity-100" : "lg:opacity-0"}
+                      `}
                     />
                   )}
                 </button>
 
-                {/* Sub Menu Items - Only show when business plan is active and sidebar is open */}
-                {hasSubItems && isBusinessPlanActive && isOpen && (
+                {/* Sub Menu Items - Show when business plan is active and sidebar is open */}
+                {hasSubItems && (isBusinessPlanActive || hasActiveSubItem) && isOpen && (
                   <div className="ml-4 pl-3 border-l border-gray-200 dark:border-gray-600 space-y-1">
                     {item.subItems.map((subItem) => {
                       const SubIcon = subItem.icon;
@@ -363,14 +370,14 @@ const Sidebar = ({
             {/* Logout Text */}
             <span
               className={`
-                                font-medium text-left ml-3 
-                                transition-all duration-200
-                                ${
-                                  isOpen
-                                    ? "opacity-100 block"
-                                    : "lg:opacity-0 lg:absolute lg:-left-96"
-                                }
-                            `}
+                font-medium text-left ml-3 
+                transition-all duration-200
+                ${
+                  isOpen
+                    ? "opacity-100 block"
+                    : "lg:opacity-0 lg:absolute lg:-left-96"
+                }
+              `}
             >
               Keluar
             </span>
