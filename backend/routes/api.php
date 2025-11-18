@@ -9,6 +9,7 @@ use App\Http\Controllers\BusinessPlan\ProductServiceController;
 use App\Http\Controllers\BusinessPlan\OperationalPlanController;
 use App\Http\Controllers\BusinessPlan\TeamStructureController;
 use App\Http\Controllers\BusinessPlan\PdfBusinessPlanController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 
@@ -130,6 +131,16 @@ Route::prefix('pdf-business-plan')->middleware('auth:sanctum')->group(function (
     Route::post('/generate', [PdfBusinessPlanController::class, 'generatePdf']);
     Route::post('/executive-summary', [PdfBusinessPlanController::class, 'generateExecutiveSummary']);
     Route::get('/statistics', [PdfBusinessPlanController::class, 'getPdfStatistics']);
+});
+                                                                      
+// Route::get('/executive-summary', [ExecutiveSummaryController::class, 'index']);
+Route::get('/executive-summary/{userId}', [ExecutiveSummaryController::class, 'index']);
+
+Route::prefix('user')->group(function () {
+    Route::get('/{id}', [UserController::class, 'show']);
+    Route::put('/{id}', [UserController::class, 'update']);
+    Route::put('/{id}/password', [UserController::class, 'updatePassword']);
+    Route::put('/{id}/status', [UserController::class, 'updateStatus']); // opsional
 });
 
 Route::get('/test-wa', function () {
