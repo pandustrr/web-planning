@@ -132,9 +132,7 @@ Route::prefix('pdf-business-plan')->middleware('auth:sanctum')->group(function (
     Route::post('/executive-summary', [PdfBusinessPlanController::class, 'generateExecutiveSummary']);
     Route::get('/statistics', [PdfBusinessPlanController::class, 'getPdfStatistics']);
 });
-                                                                      
-// Route::get('/executive-summary', [ExecutiveSummaryController::class, 'index']);
-Route::get('/executive-summary/{userId}', [ExecutiveSummaryController::class, 'index']);
+
 
 Route::prefix('user')->group(function () {
     Route::get('/{id}', [UserController::class, 'show']);
@@ -142,35 +140,3 @@ Route::prefix('user')->group(function () {
     Route::put('/{id}/password', [UserController::class, 'updatePassword']);
     Route::put('/{id}/status', [UserController::class, 'updateStatus']); // opsional
 });
-
-Route::get('/test-wa', function () {
-    $response = Http::withHeaders([
-        'Authorization' => env('FONNTE_API_KEY'),
-    ])->post(env('FONNTE_API_URL'), [
-        'target' => '6281237867242',
-        'message' => 'Halo Pandu! Tes kirim pesan dari Laravel ',
-    ]);
-
-    return response()->json($response->json());
-});
-
-// Route::get('/test-email/{email?}', function ($email = null) {
-//     $testEmail = $email ?: 'pandusatria2807@gmail.com';
-
-//     try {
-//         Mail::raw('Test email from PlanWeb - Email Verification System', function ($message) use ($testEmail) {
-//             $message->to($testEmail)
-//                 ->subject('Test Email Verification - PlanWeb');
-//         });
-
-//         return response()->json([
-//             'success' => true,
-//             'message' => 'Email sent successfully to: ' . $testEmail
-//         ]);
-//     } catch (\Exception $e) {
-//         return response()->json([
-//             'success' => false,
-//             'message' => $e->getMessage()
-//         ]);
-//     }
-// });

@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { backgroundApi } from '../../../services/businessPlan/backgroundApi';
 import pdfBusinessPlanApi from '../../../services/businessPlan/pdfBusinessPlanApi';
+import { financialPlanApi } from '../../../services/businessPlan/financialPlanApi';
+import html2canvas from 'html2canvas';
 
 const PdfBusinessPlan = ({ onBack }) => {
   const [businessBackgrounds, setBusinessBackgrounds] = useState([]);
   const [selectedBusiness, setSelectedBusiness] = useState('');
   const [selectedBusinessData, setSelectedBusinessData] = useState(null);
+  const [financialPlans, setFinancialPlans] = useState([]);
   const [mode, setMode] = useState('free');
   const [loading, setLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -13,6 +16,9 @@ const PdfBusinessPlan = ({ onBack }) => {
   const [statistics, setStatistics] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [validationErrors, setValidationErrors] = useState([]);
+  
+  // Refs untuk chart
+  const chartRefs = useRef({});
 
   useEffect(() => {
     loadBusinessBackgrounds();
@@ -22,8 +28,10 @@ const PdfBusinessPlan = ({ onBack }) => {
   useEffect(() => {
     if (selectedBusiness) {
       loadSelectedBusinessData();
+      loadFinancialPlans();
     } else {
       setSelectedBusinessData(null);
+      setFinancialPlans([]);
       setValidationErrors([]);
     }
   }, [selectedBusiness]);
@@ -51,6 +59,27 @@ const PdfBusinessPlan = ({ onBack }) => {
     }
   };
 
+  const loadFinancialPlans = async () => {
+    try {
+      const response = await financialPlanApi.getAll({
+        business_background_id: selectedBusiness
+      });
+      console.log('📊 Financial plans API response:', response.data);
+      
+      if (response.data.status === 'success') {
+        const plans = Array.isArray(response.data.data) ? response.data.data : [];
+        console.log('✅ Financial plans loaded:', plans.length, 'plans');
+        setFinancialPlans(plans);
+      } else {
+        console.log('❌ No financial plans data');
+        setFinancialPlans([]);
+      }
+    } catch (error) {
+      console.error('❌ Error loading financial plans:', error);
+      setFinancialPlans([]);
+    }
+  };
+
   const loadStatistics = async () => {
     try {
       const response = await pdfBusinessPlanApi.getStatistics();
@@ -62,6 +91,107 @@ const PdfBusinessPlan = ({ onBack }) => {
     }
   };
 
+  // Function untuk capture chart sebagai gambar
+  const captureChartAsImage = async (chartElement, chartName) => {
+    if (!chartElement) {
+      console.log(`❌ Chart element not found: ${chartName}`);
+      return null;
+    }
+
+    try {
+      console.log(`🖼️ Capturing chart: ${chartName}`);
+      
+      const canvas = await html2canvas(chartElement, {
+        backgroundColor: '#ffffff',
+        scale: 2, // Higher quality
+        useCORS: true,
+        allowTaint: false,
+        logging: true,
+        width: chartElement.scrollWidth,
+        height: chartElement.scrollHeight
+      });
+
+      const imageData = canvas.toDataURL('image/png');
+      console.log(`✅ Chart captured successfully: ${chartName}`, imageData.substring(0, 100) + '...');
+      
+      return imageData;
+    } catch (error) {
+      console.error(`❌ Error capturing chart ${chartName}:`, error);
+      return null;
+    }
+  };
+
+  // Function untuk generate semua chart images
+  const generateAllChartImages = async () => {
+    console.log('🚀 Starting chart image generation...');
+    
+    // Pastikan financialPlans adalah array
+    const safeFinancialPlans = Array.isArray(financialPlans) ? financialPlans : [];
+    
+    if (safeFinancialPlans.length === 0) {
+      console.log('ℹ️ No financial plans available for chart generation');
+      return {};
+    }
+
+    console.log(`📈 Generating charts for ${safeFinancialPlans.length} financial plans`);
+
+    const allChartImages = {};
+
+    // Tunggu sebentar untuk memastikan DOM sudah dirender sepenuhnya
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    for (const plan of safeFinancialPlans) {
+      try {
+        console.log(`\n🎯 Processing financial plan: ${plan.id} - ${plan.plan_name}`);
+        
+        const planChartImages = {};
+
+        // Capture Profit & Loss Chart
+        const profitLossRef = chartRefs.current[`profit-loss-${plan.id}`];
+        if (profitLossRef) {
+          const profitLossImage = await captureChartAsImage(profitLossRef, `profit-loss-${plan.id}`);
+          if (profitLossImage) {
+            planChartImages.profit_loss = profitLossImage;
+          }
+        } else {
+          console.log(`⚠️ Profit-loss chart ref not found for plan ${plan.id}`);
+        }
+
+        // Capture Revenue Streams Chart
+        const revenueRef = chartRefs.current[`revenue-${plan.id}`];
+        if (revenueRef) {
+          const revenueImage = await captureChartAsImage(revenueRef, `revenue-${plan.id}`);
+          if (revenueImage) {
+            planChartImages.revenue_streams = revenueImage;
+          }
+        } else {
+          console.log(`⚠️ Revenue chart ref not found for plan ${plan.id}`);
+        }
+
+        // Capture Capital Structure Chart
+        const capitalRef = chartRefs.current[`capital-${plan.id}`];
+        if (capitalRef) {
+          const capitalImage = await captureChartAsImage(capitalRef, `capital-${plan.id}`);
+          if (capitalImage) {
+            planChartImages.capital_structure = capitalImage;
+          }
+        } else {
+          console.log(`⚠️ Capital structure chart ref not found for plan ${plan.id}`);
+        }
+
+        allChartImages[plan.id] = planChartImages;
+        console.log(`✅ Completed charts for plan ${plan.id}:`, Object.keys(planChartImages));
+
+      } catch (error) {
+        console.error(`❌ Error processing charts for plan ${plan.id}:`, error);
+        allChartImages[plan.id] = {};
+      }
+    }
+
+    console.log('🎉 All chart images generated:', allChartImages);
+    return allChartImages;
+  };
+
   const validateBusinessData = () => {
     const errors = [];
 
@@ -70,7 +200,6 @@ const PdfBusinessPlan = ({ onBack }) => {
       return errors;
     }
 
-    // Validasi data minimal yang diperlukan
     if (!selectedBusinessData.name) {
       errors.push('Nama bisnis harus diisi');
     }
@@ -108,14 +237,41 @@ const PdfBusinessPlan = ({ onBack }) => {
     setValidationErrors([]);
 
     try {
+      console.log('🚀 Starting PDF generation process...');
+      
+      // Step 1: Generate chart images dari React components
+      console.log('📸 Step 1: Generating chart images from React components...');
+      const chartImages = await generateAllChartImages();
+      
+      console.log('✅ Chart images generated:', Object.keys(chartImages).length, 'plans with charts');
+
+      // Step 2: Kirim ke backend Laravel
+      console.log('📤 Step 2: Sending data to Laravel backend...');
+      
       if (preview) {
-        const response = await pdfBusinessPlanApi.previewPdf(selectedBusiness, mode);
+        console.log('👁️ Generating preview...');
+        const response = await pdfBusinessPlanApi.previewPdf(
+          selectedBusiness, 
+          mode, 
+          chartImages
+        );
+        
         if (response.data.status === 'success') {
           setPreviewData(response.data.data);
           setPreviewOpen(true);
+          setMessage({ type: 'success', text: 'Preview berhasil dibuat' });
+        } else {
+          throw new Error(response.data.message || 'Failed to generate preview');
         }
       } else {
-        const response = await pdfBusinessPlanApi.generatePdf(selectedBusiness, mode);
+        console.log('📥 Generating PDF download...');
+        const response = await pdfBusinessPlanApi.generatePdf(
+          selectedBusiness, 
+          mode, 
+          chartImages
+        );
+        
+        console.log('✅ PDF generated by backend, downloading...');
         
         // Create blob and download
         const blob = new Blob([response.data], { type: 'application/pdf' });
@@ -140,9 +296,10 @@ const PdfBusinessPlan = ({ onBack }) => {
         window.URL.revokeObjectURL(url);
 
         setMessage({ type: 'success', text: 'PDF berhasil diunduh' });
+        console.log('🎉 PDF download completed');
       }
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('❌ Error generating PDF:', error);
       
       let errorMessage = 'Gagal menghasilkan PDF. ';
       
@@ -150,6 +307,8 @@ const PdfBusinessPlan = ({ onBack }) => {
         errorMessage += 'Server error. Pastikan semua data bisnis sudah lengkap dan valid.';
       } else if (error.response?.data?.message) {
         errorMessage += error.response.data.message;
+      } else if (error.message) {
+        errorMessage += error.message;
       } else {
         errorMessage += 'Silakan coba lagi atau hubungi administrator.';
       }
@@ -166,7 +325,6 @@ const PdfBusinessPlan = ({ onBack }) => {
       return;
     }
 
-    // Validasi data sebelum generate executive summary
     const errors = validateBusinessData();
     if (errors.length > 0) {
       setValidationErrors(errors);
@@ -215,10 +373,256 @@ const PdfBusinessPlan = ({ onBack }) => {
     return Math.round((completedFields / requiredFields.length) * 100);
   };
 
+  // Function untuk render chart preview yang akan di-capture
+  const renderChartPreviews = () => {
+    const safeFinancialPlans = Array.isArray(financialPlans) ? financialPlans : [];
+    
+    if (safeFinancialPlans.length === 0) {
+      return (
+        <div className="text-center py-4 text-gray-500">
+          Tidak ada data rencana keuangan untuk ditampilkan
+        </div>
+      );
+    }
+
+    return safeFinancialPlans.map(plan => (
+      <div key={plan.id} className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
+          📊 Chart Preview - {plan.plan_name}
+        </h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Profit Loss Chart Preview */}
+          <div className="bg-white p-4 rounded-lg border border-gray-300 shadow-sm">
+            <h5 className="text-sm font-medium mb-2 text-center">💰 Profit & Loss</h5>
+            <div 
+              ref={el => {
+                if (el) {
+                  chartRefs.current[`profit-loss-${plan.id}`] = el;
+                  console.log(`✅ Profit-loss chart ref set for plan ${plan.id}`);
+                }
+              }}
+              className="chart-container"
+              style={{ 
+                height: '200px', 
+                background: 'white',
+                padding: '10px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px'
+              }}
+            >
+              <div style={{ 
+                textAlign: 'center',
+                fontFamily: 'Arial, sans-serif',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <h6 style={{ 
+                  margin: '0 0 10px 0', 
+                  fontSize: '14px', 
+                  fontWeight: 'bold',
+                  color: '#1f2937'
+                }}>
+                  Profit & Loss Analysis
+                </h6>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  alignItems: 'flex-end', 
+                  height: '120px', 
+                  gap: '15px',
+                  flex: 1
+                }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ 
+                      height: `${Math.min(100, ((plan.total_monthly_income || 0) / ((plan.total_monthly_income || 0) + 1)) * 80)}px`, 
+                      width: '35px', 
+                      background: '#10b981',
+                      margin: '0 auto',
+                      borderRadius: '4px 4px 0 0'
+                    }}></div>
+                    <div style={{ fontSize: '10px', marginTop: '5px', fontWeight: 'bold' }}>Income</div>
+                    <div style={{ fontSize: '9px', color: '#6b7280' }}>
+                      Rp {new Intl.NumberFormat('id-ID').format(plan.total_monthly_income || 0)}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ 
+                      height: `${Math.min(100, ((plan.total_monthly_opex || 0) / ((plan.total_monthly_income || 1)) * 80))}px`, 
+                      width: '35px', 
+                      background: '#ef4444',
+                      margin: '0 auto',
+                      borderRadius: '4px 4px 0 0'
+                    }}></div>
+                    <div style={{ fontSize: '10px', marginTop: '5px', fontWeight: 'bold' }}>Expense</div>
+                    <div style={{ fontSize: '9px', color: '#6b7280' }}>
+                      Rp {new Intl.NumberFormat('id-ID').format(plan.total_monthly_opex || 0)}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ 
+                      height: `${Math.min(100, ((plan.net_profit || 0) / ((plan.total_monthly_income || 1)) * 80))}px`, 
+                      width: '35px', 
+                      background: '#3b82f6',
+                      margin: '0 auto',
+                      borderRadius: '4px 4px 0 0'
+                    }}></div>
+                    <div style={{ fontSize: '10px', marginTop: '5px', fontWeight: 'bold' }}>Net Profit</div>
+                    <div style={{ fontSize: '9px', color: '#6b7280' }}>
+                      Rp {new Intl.NumberFormat('id-ID').format(plan.net_profit || 0)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Revenue Streams Chart Preview */}
+          <div className="bg-white p-4 rounded-lg border border-gray-300 shadow-sm">
+            <h5 className="text-sm font-medium mb-2 text-center">📈 Revenue Streams</h5>
+            <div 
+              ref={el => {
+                if (el) {
+                  chartRefs.current[`revenue-${plan.id}`] = el;
+                  console.log(`✅ Revenue chart ref set for plan ${plan.id}`);
+                }
+              }}
+              className="chart-container"
+              style={{ 
+                height: '200px', 
+                background: 'white',
+                padding: '10px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px'
+              }}
+            >
+              <div style={{ 
+                textAlign: 'center',
+                fontFamily: 'Arial, sans-serif',
+                height: '100%'
+              }}>
+                <h6 style={{ 
+                  margin: '0 0 10px 0', 
+                  fontSize: '14px', 
+                  fontWeight: 'bold',
+                  color: '#1f2937'
+                }}>
+                  Revenue Sources
+                </h6>
+                <div style={{ 
+                  fontSize: '11px', 
+                  textAlign: 'left',
+                  height: '140px',
+                  overflowY: 'auto'
+                }}>
+                  {plan.sales_projections?.length > 0 ? (
+                    plan.sales_projections.map((projection, index) => (
+                      <div key={index} style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        marginBottom: '6px',
+                        padding: '4px 0',
+                        borderBottom: '1px solid #f3f4f6'
+                      }}>
+                        <span style={{ fontWeight: '500' }}>{projection.product}</span>
+                        <span style={{ fontWeight: 'bold', color: '#059669' }}>
+                          Rp {new Intl.NumberFormat('id-ID').format(projection.monthly_income || 0)}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      color: '#6b7280', 
+                      fontStyle: 'italic',
+                      marginTop: '50px'
+                    }}>
+                      No revenue data available
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Capital Structure Chart Preview */}
+          <div className="bg-white p-4 rounded-lg border border-gray-300 shadow-sm">
+            <h5 className="text-sm font-medium mb-2 text-center">🏦 Capital Structure</h5>
+            <div 
+              ref={el => {
+                if (el) {
+                  chartRefs.current[`capital-${plan.id}`] = el;
+                  console.log(`✅ Capital chart ref set for plan ${plan.id}`);
+                }
+              }}
+              className="chart-container"
+              style={{ 
+                height: '200px', 
+                background: 'white',
+                padding: '10px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px'
+              }}
+            >
+              <div style={{ 
+                textAlign: 'center',
+                fontFamily: 'Arial, sans-serif',
+                height: '100%'
+              }}>
+                <h6 style={{ 
+                  margin: '0 0 10px 0', 
+                  fontSize: '14px', 
+                  fontWeight: 'bold',
+                  color: '#1f2937'
+                }}>
+                  Funding Sources
+                </h6>
+                <div style={{ 
+                  fontSize: '11px', 
+                  textAlign: 'left',
+                  height: '140px',
+                  overflowY: 'auto'
+                }}>
+                  {plan.capital_sources?.length > 0 ? (
+                    plan.capital_sources.map((source, index) => (
+                      <div key={index} style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        marginBottom: '6px',
+                        padding: '4px 0',
+                        borderBottom: '1px solid #f3f4f6'
+                      }}>
+                        <span style={{ fontWeight: '500' }}>{source.source}</span>
+                        <span style={{ fontWeight: 'bold', color: '#7c3aed' }}>
+                          {source.percentage}%
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      color: '#6b7280', 
+                      fontStyle: 'italic',
+                      marginTop: '50px'
+                    }}>
+                      No capital data available
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    ));
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header dengan Back Button */}
+        {/* Header */}
         <div className="mb-8">
           <button 
             onClick={onBack}
@@ -230,7 +634,7 @@ const PdfBusinessPlan = ({ onBack }) => {
             📊 PDF Business Plan
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Generate laporan business plan profesional dalam format PDF
+            Generate laporan business plan profesional dalam format PDF dengan grafik keuangan
           </p>
         </div>
 
@@ -238,25 +642,11 @@ const PdfBusinessPlan = ({ onBack }) => {
         {statistics && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 text-center">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">🏢</span>
-              </div>
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {statistics.total_business_plans}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 Total Business Plans
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 text-center">
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">📈</span>
-              </div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {statistics.pdf_usage?.generated_today || 0}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                PDF Generated Today
               </div>
             </div>
           </div>
@@ -270,20 +660,6 @@ const PdfBusinessPlan = ({ onBack }) => {
               : 'bg-green-100 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
           }`}>
             {message.text}
-          </div>
-        )}
-
-        {/* Validation Errors */}
-        {validationErrors.length > 0 && (
-          <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <h3 className="font-semibold text-yellow-800 dark:text-yellow-400 mb-2">
-              ⚠️ Data yang perlu dilengkapi:
-            </h3>
-            <ul className="list-disc list-inside space-y-1 text-yellow-700 dark:text-yellow-300">
-              {validationErrors.map((error, index) => (
-                <li key={index}>{error}</li>
-              ))}
-            </ul>
           </div>
         )}
 
@@ -304,18 +680,33 @@ const PdfBusinessPlan = ({ onBack }) => {
                 style={{ width: `${getBusinessCompletionStatus()}%` }}
               ></div>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              {getBusinessCompletionStatus() >= 80 
-                ? '✅ Data sudah cukup lengkap untuk generate PDF'
-                : '⚠️ Lengkapi data terlebih dahulu untuk hasil yang optimal'}
-            </p>
           </div>
         )}
 
-        {/* Main Card */}
+        {/* Chart Previews Section */}
+        {selectedBusiness && Array.isArray(financialPlans) && financialPlans.length > 0 && (
+          <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                📊 Preview Grafik Keuangan
+              </h3>
+              <span className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
+                {financialPlans.length} Rencana Keuangan
+              </span>
+            </div>
+            {renderChartPreviews()}
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                💡 <strong>Info:</strong> Grafik di atas akan dikonversi menjadi gambar berkualitas tinggi 
+                dan dimasukkan ke dalam PDF. Pastikan data keuangan sudah lengkap sebelum generate PDF.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Main Control Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Business Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Pilih Bisnis
@@ -334,7 +725,6 @@ const PdfBusinessPlan = ({ onBack }) => {
               </select>
             </div>
 
-            {/* Mode Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Mode PDF
@@ -344,12 +734,8 @@ const PdfBusinessPlan = ({ onBack }) => {
                 onChange={(e) => setMode(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="free">
-                  🆓 Gratis - Dengan Watermark
-                </option>
-                <option value="pro">
-                  💎 Pro - Tanpa Watermark
-                </option>
+                <option value="free">🆓 Gratis - Dengan Watermark</option>
+                <option value="pro">💎 Pro - Tanpa Watermark</option>
               </select>
             </div>
           </div>
@@ -360,12 +746,11 @@ const PdfBusinessPlan = ({ onBack }) => {
               onClick={() => handleGeneratePdf(true)}
               disabled={loading || !selectedBusiness || getBusinessCompletionStatus() < 50}
               className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-              title={getBusinessCompletionStatus() < 50 ? 'Lengkapi data minimal 50% untuk preview' : ''}
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
               ) : (
-                '👁️ Preview'
+                '👁️ Preview PDF'
               )}
             </button>
 
@@ -373,7 +758,6 @@ const PdfBusinessPlan = ({ onBack }) => {
               onClick={() => handleGeneratePdf(false)}
               disabled={loading || !selectedBusiness || getBusinessCompletionStatus() < 80}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-              title={getBusinessCompletionStatus() < 80 ? 'Lengkapi data minimal 80% untuk download PDF' : ''}
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -381,41 +765,31 @@ const PdfBusinessPlan = ({ onBack }) => {
                 '📥 Download PDF'
               )}
             </button>
-
-            <button
-              onClick={handleGenerateExecutiveSummary}
-              disabled={loading || !selectedBusiness || getBusinessCompletionStatus() < 50}
-              className="flex items-center gap-2 px-4 py-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-              title={getBusinessCompletionStatus() < 50 ? 'Lengkapi data minimal 50% untuk ringkasan eksekutif' : ''}
-            >
-              📄 Ringkasan Eksekutif
-            </button>
           </div>
 
-          {/* Features Info */}
+          {/* Process Info */}
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
-              ✨ Fitur PDF Business Plan:
-            </h3>
-            <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-              <li>• Ringkasan Eksekutif otomatis</li>
-              <li>• Analisis pasar dan kompetitor</li>
-              <li>• Rencana keuangan lengkap</li>
-              <li>• Struktur organisasi</li>
-              <li>• Strategi pemasaran dan operasional</li>
-              <li>• Format profesional dan rapi</li>
-            </ul>
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+              🔄 Alur Generate PDF:
+            </h4>
+            <ol className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-decimal list-inside">
+              <li>Render grafik di React menggunakan HTML/CSS</li>
+              <li>Convert grafik menjadi gambar PNG berkualitas tinggi</li>
+              <li>Kirim gambar ke backend Laravel</li>
+              <li>Laravel generate PDF dengan menyisipkan gambar grafik</li>
+              <li>Download PDF yang sudah include grafik keuangan</li>
+            </ol>
           </div>
         </div>
 
         {/* Preview Modal */}
-        {previewOpen && (
+        {previewOpen && previewData && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex justify-between items-center">
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Preview - {previewData?.business_name || 'Business Plan'}
+                    Preview - {previewData.business_name || 'Business Plan'}
                   </h2>
                   <button
                     onClick={() => setPreviewOpen(false)}
@@ -427,7 +801,7 @@ const PdfBusinessPlan = ({ onBack }) => {
               </div>
 
               <div className="p-6">
-                {previewData?.type === 'executive_summary' ? (
+                {previewData.type === 'executive_summary' ? (
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                       Ringkasan Eksekutif
@@ -443,27 +817,30 @@ const PdfBusinessPlan = ({ onBack }) => {
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                       Data Preview untuk PDF
                     </h3>
-                    <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
-                      <p><strong>Filename:</strong> {previewData?.filename}</p>
-                      <p>
-                        <strong>Mode:</strong> {previewData?.mode === 'free' 
-                          ? '🆓 Gratis (Watermark)' 
-                          : '💎 Pro (Tanpa Watermark)'}
-                      </p>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <strong>Filename:</strong> {previewData.filename}
+                        </div>
+                        <div>
+                          <strong>Mode:</strong> {previewData.mode === 'free' ? '🆓 Gratis' : '💎 Pro'}
+                        </div>
+                      </div>
                       
-                      <div className="mt-4">
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                          Data yang akan dimasukkan dalam PDF:
+                      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                        <h4 className="font-medium text-gray-900 dark:text-white mb-3">
+                          📊 Data yang akan dimasukkan:
                         </h4>
-                        <ul className="space-y-1">
-                          <li>• Informasi Bisnis: {previewData?.preview_data?.business_background?.name}</li>
-                          <li>• Analisis Pasar: {previewData?.preview_data?.market_analysis ? '✅' : '❌'}</li>
-                          <li>• Produk/Layanan: {previewData?.preview_data?.products_services?.length || 0} item</li>
-                          <li>• Strategi Pemasaran: {previewData?.preview_data?.marketing_strategies?.length || 0} item</li>
-                          <li>• Rencana Operasional: {previewData?.preview_data?.operational_plans?.length || 0} item</li>
-                          <li>• Struktur Tim: {previewData?.preview_data?.team_structures?.length || 0} anggota</li>
-                          <li>• Rencana Keuangan: {previewData?.preview_data?.financial_plans?.length || 0} plan</li>
-                        </ul>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>• Informasi Bisnis: ✅</div>
+                          <div>• Analisis Pasar: {previewData.preview_data?.market_analysis ? '✅' : '❌'}</div>
+                          <div>• Produk/Layanan: {previewData.preview_data?.products_services?.length || 0} item</div>
+                          <div>• Strategi Pemasaran: {previewData.preview_data?.marketing_strategies?.length || 0} item</div>
+                          <div>• Rencana Operasional: {previewData.preview_data?.operational_plans?.length || 0} item</div>
+                          <div>• Struktur Tim: {previewData.preview_data?.team_structures?.length || 0} anggota</div>
+                          <div>• Rencana Keuangan: {previewData.preview_data?.financial_plans?.length || 0} plan</div>
+                          <div>• Grafik Keuangan: {previewData.chart_data ? '✅' : '❌'}</div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -473,17 +850,17 @@ const PdfBusinessPlan = ({ onBack }) => {
               <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
                 <button
                   onClick={() => setPreviewOpen(false)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Tutup
                 </button>
-                {previewData?.type !== 'executive_summary' && (
+                {previewData.type !== 'executive_summary' && (
                   <button
                     onClick={() => {
                       setPreviewOpen(false);
                       handleGeneratePdf(false);
                     }}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
                   >
                     Download PDF
                   </button>
