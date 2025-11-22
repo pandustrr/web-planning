@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <meta charset="utf-8">
-    <title>Business Plan - {{ $data['business_background']->name }}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Plan - {{ $businessBackground->name }}</title>
     <style>
-        /* Reset dan base styles */
         * {
             margin: 0;
             padding: 0;
@@ -12,1271 +12,698 @@
         }
 
         body {
-            font-family: "Times New Roman", Times, serif;
-            line-height: 1.5;
-            color: #000;
-            font-size: 12pt;
-            text-align: justify;
+            font-family: 'Arial', sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #333;
         }
 
-        /* Watermark untuk mode gratis */
+        @page {
+            margin: 2cm;
+        }
+
+        /* Watermark untuk versi free */
+        @if(!$isPro)
         .watermark {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 72pt;
-            color: rgba(0, 0, 0, 0.08);
+            font-size: 80pt;
+            font-weight: bold;
+            color: rgba(200, 200, 200, 0.2);
             z-index: -1;
             white-space: nowrap;
-            font-weight: bold;
-            font-family: "Times New Roman", Times, serif;
         }
-
-        /* Layout halaman */
-        .page {
-            page-break-after: always;
-            padding: 25mm;
-            position: relative;
-            counter-increment: page;
-        }
-
-        .page:last-child {
-            page-break-after: auto;
-        }
+        @endif
 
         /* Header */
         .header {
-            border-bottom: 2px solid #2c5aa0;
-            padding-bottom: 8pt;
-            margin-bottom: 16pt;
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 3px solid #16a34a;
+            margin-bottom: 30px;
         }
 
-        .company-name {
+        .header .logo {
+            max-width: 120px;
+            max-height: 120px;
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            color: #16a34a;
+            font-size: 28pt;
+            margin-bottom: 5px;
+        }
+
+        .header h2 {
+            color: #666;
             font-size: 18pt;
-            color: #2c5aa0;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 4pt;
+            font-weight: normal;
         }
 
-        .document-title {
-            font-size: 14pt;
+        .header .company-info {
+            margin-top: 10px;
+            font-size: 10pt;
+            color: #666;
+        }
+
+        /* Cover Page */
+        .cover-page {
+            page-break-after: always;
+            text-align: center;
+            padding-top: 100px;
+        }
+
+        .cover-page .logo-large {
+            max-width: 200px;
+            max-height: 200px;
+            margin-bottom: 30px;
+        }
+
+        .cover-page h1 {
+            font-size: 36pt;
+            color: #16a34a;
+            margin-bottom: 20px;
+        }
+
+        .cover-page h2 {
+            font-size: 24pt;
             color: #333;
-            text-align: center;
-            font-weight: bold;
+            margin-bottom: 50px;
         }
 
-        /* Sections */
+        .cover-page .meta-info {
+            margin-top: 100px;
+            font-size: 12pt;
+            color: #666;
+        }
+
+        /* Section Styles */
         .section {
-            margin-bottom: 20pt;
             page-break-inside: avoid;
+            margin-bottom: 30px;
         }
 
         .section-title {
-            font-size: 14pt;
-            color: #2c5aa0;
-            border-bottom: 1px solid #2c5aa0;
-            padding-bottom: 4pt;
-            margin-bottom: 8pt;
-            font-weight: bold;
-            text-align: left;
-        }
-
-        .subsection {
-            margin-bottom: 12pt;
+            background-color: #16a34a;
+            color: white;
+            padding: 12px 15px;
+            font-size: 16pt;
+            margin-bottom: 20px;
+            border-radius: 3px;
         }
 
         .subsection-title {
-            font-size: 12pt;
-            color: #000;
-            font-weight: bold;
-            margin-bottom: 6pt;
-            text-decoration: underline;
+            color: #16a34a;
+            font-size: 14pt;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #e5e7eb;
         }
 
-        /* Tables */
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 8pt 0;
+        /* Info Box */
+        .info-box {
+            background-color: #f9fafb;
+            border-left: 4px solid #16a34a;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 3px;
+        }
+
+        .info-box h3 {
+            color: #16a34a;
+            font-size: 12pt;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            margin: 5px 0;
             font-size: 10pt;
         }
 
-        .table th,
-        .table td {
-            border: 1px solid #000;
-            padding: 6pt;
-            text-align: left;
+        /* Grid Layout */
+        .grid-2 {
+            display: table;
+            width: 100%;
+            margin: 15px 0;
+        }
+
+        .grid-col {
+            display: table-cell;
+            width: 50%;
             vertical-align: top;
+            padding: 0 10px;
         }
 
-        .table th {
-            background-color: #f0f0f0;
+        /* Badge Styles */
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 9pt;
             font-weight: bold;
-            text-align: center;
+            margin: 5px 5px 5px 0;
         }
 
-        .table tr:nth-child(even) {
-            background-color: #f8f8f8;
+        .badge-green {
+            background-color: #dcfce7;
+            color: #166534;
         }
 
-        /* Chart Tables */
-        .chart-table {
+        .badge-blue {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-yellow {
+            background-color: #fef9c3;
+            color: #854d0e;
+        }
+
+        .badge-purple {
+            background-color: #f3e8ff;
+            color: #6b21a8;
+        }
+
+        /* Table Styles */
+        table {
             width: 100%;
             border-collapse: collapse;
-            margin: 12pt 0;
-            font-size: 9pt;
+            margin: 15px 0;
+            font-size: 10pt;
         }
 
-        .chart-table th {
-            background-color: #2c5aa0;
+        table th {
+            background-color: #16a34a;
             color: white;
-            padding: 5pt;
-            text-align: center;
-            font-weight: bold;
-            border: 1px solid #000;
-        }
-
-        .chart-table td {
-            border: 1px solid #000;
-            padding: 5pt;
-            vertical-align: top;
-        }
-
-        .chart-table tr.total-row {
-            background-color: #e8f4fd;
-            font-weight: bold;
-        }
-
-        .chart-table tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-
-        /* Chart Images */
-        .chart-image {
-            max-width: 100%;
-            height: auto;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin: 10pt 0;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .chart-section {
-            page-break-inside: avoid;
-            margin: 16pt 0;
-        }
-
-        .chart-title {
-            font-size: 11pt;
-            font-weight: bold;
-            color: #2c5aa0;
-            margin-bottom: 8pt;
-            text-align: center;
-            background: #f8f9fa;
-            padding: 6pt;
-            border-radius: 4px;
-            border-left: 4px solid #2c5aa0;
-        }
-
-        /* Utilities */
-        .text-center {
-            text-align: center;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .text-left {
+            padding: 10px;
             text-align: left;
-        }
-
-        .text-bold {
             font-weight: bold;
         }
 
-        .text-italic {
-            font-style: italic;
+        table td {
+            padding: 10px;
+            border-bottom: 1px solid #e5e7eb;
         }
 
-        .mb-10 {
-            margin-bottom: 10pt;
+        table tr:nth-child(even) {
+            background-color: #f9fafb;
         }
 
-        .mb-15 {
-            margin-bottom: 15pt;
+        /* Card for Vision, Mission, Values */
+        .card {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
         }
 
-        .mt-15 {
-            margin-top: 15pt;
+        .card h3 {
+            color: #16a34a;
+            margin-bottom: 10px;
+            font-size: 12pt;
         }
 
-        /* Financial highlights */
-        .financial-highlights {
-            background: #f8f9fa;
-            padding: 12pt;
-            border-radius: 4px;
-            border-left: 4px solid #2c5aa0;
-            margin: 10pt 0;
+        .card p {
+            color: #333;
+            line-height: 1.8;
         }
 
-        .chart-container {
-            background: #f8f9fa;
-            padding: 12pt;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-            margin: 8pt 0;
+        /* Product/Service Card */
+        .product-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            page-break-inside: avoid;
         }
 
-        /* List styles */
-        .content-list {
-            list-style-type: decimal;
-            margin-left: 20pt;
-            margin-bottom: 12pt;
-        }
-
-        .content-list li {
-            margin-bottom: 6pt;
-            line-height: 1.4;
-        }
-
-        .content-list .sub-list {
-            list-style-type: lower-alpha;
-            margin-left: 20pt;
-            margin-top: 4pt;
-        }
-
-        .content-list .sub-list li {
-            margin-bottom: 4pt;
-        }
-
-        /* Table of Contents */
-        .toc-container {
-            margin: 16pt 0;
-        }
-
-        .toc-item {
-            margin-bottom: 4pt;
-            line-height: 1.4;
-        }
-
-        .toc-page {
+        .product-card .product-image {
+            max-width: 150px;
+            max-height: 150px;
             float: right;
-            font-weight: bold;
+            margin-left: 15px;
+            border-radius: 5px;
         }
 
-        .toc-subitem {
-            margin-left: 15pt;
-            margin-bottom: 3pt;
-            font-size: 11pt;
+        .product-card h4 {
+            color: #16a34a;
+            font-size: 12pt;
+            margin-bottom: 8px;
         }
 
-        .toc-section {
-            margin-bottom: 8pt;
+        /* Team Member Card */
+        .team-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            page-break-inside: avoid;
+        }
+
+        .team-card .team-photo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            float: left;
+            margin-right: 15px;
+            object-fit: cover;
+        }
+
+        .team-card h4 {
+            color: #16a34a;
+            font-size: 12pt;
+            margin-bottom: 5px;
+        }
+
+        .team-card .position {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 8px;
+        }
+
+        /* List Styles */
+        ul {
+            margin: 10px 0 10px 20px;
+        }
+
+        li {
+            margin: 5px 0;
         }
 
         /* Footer */
         .footer {
             position: fixed;
-            bottom: 15mm;
-            left: 25mm;
-            right: 25mm;
-            border-top: 1px solid #000;
-            padding-top: 6pt;
-            font-size: 9pt;
-            color: #666;
-            text-align: center;
-        }
-
-        /* Page numbers */
-        .page-number:before {
-            content: "Halaman " counter(page);
-        }
-
-        /* Cover page styles */
-        .cover-page {
-            text-align: center;
-            padding-top: 80pt;
-        }
-
-        .cover-title {
-            font-size: 24pt;
-            font-weight: bold;
-            color: #2c5aa0;
-            margin-bottom: 16pt;
-            text-transform: uppercase;
-        }
-
-        .cover-subtitle {
-            font-size: 18pt;
-            color: #333;
-            margin-bottom: 40pt;
-            font-weight: bold;
-        }
-
-        .cover-info {
-            font-size: 12pt;
-            color: #666;
-            margin-top: 60pt;
-        }
-
-        .cover-footer {
-            position: absolute;
-            bottom: 25mm;
+            bottom: 0;
             left: 0;
             right: 0;
             text-align: center;
-            font-size: 10pt;
-            color: #666;
+            font-size: 8pt;
+            color: #999;
+            padding: 10px 0;
+            border-top: 1px solid #e5e7eb;
         }
 
-        /* Executive summary */
-        .executive-summary {
-            line-height: 1.6;
-            text-align: justify;
+        /* Page Break */
+        .page-break {
+            page-break-after: always;
         }
 
-        /* Signature section */
-        .signature-section {
-            margin-top: 40pt;
-            text-align: center;
-        }
-
-        .signature-line {
-            width: 200pt;
-            border-bottom: 1px solid #000;
-            margin: 20pt auto 8pt auto;
-        }
-
-        .signature-name {
-            font-weight: bold;
-            margin-bottom: 4pt;
-        }
-
-        .signature-title {
-            font-size: 10pt;
-            color: #666;
+        /* Clearfix */
+        .clearfix::after {
+            content: "";
+            display: table;
+            clear: both;
         }
     </style>
 </head>
 <body>
-    @if ($mode === 'free')
-        <div class="watermark">SMARTPLAN - VERSI GRATIS</div>
+    <!-- Watermark for Free Version -->
+    @if(!$isPro)
+    <div class="watermark">SMARTPLAN FREE</div>
     @endif
 
     <!-- Cover Page -->
-    <div class="page">
-        <div class="cover-page">
-            @if ($data['business_background']->logo)
-                <div style="margin-bottom: 30pt;">
-                    <img src="{{ $data['business_background']->logo }}" alt="Logo"
-                        style="max-width: 120pt; max-height: 120pt;">
-                </div>
+    <div class="cover-page">
+        @if($logoBase64)
+            <img src="{{ $logoBase64 }}" alt="Logo" class="logo-large">
+        @endif
+
+        <h1>BUSINESS PLAN</h1>
+        <h2>{{ $businessBackground->name }}</h2>
+
+        <div class="meta-info">
+            <p><strong>Kategori:</strong> {{ $businessBackground->category }}</p>
+            <p><strong>Tipe Bisnis:</strong> {{ $businessBackground->business_type }}</p>
+            @if($businessBackground->location)
+                <p><strong>Lokasi:</strong> {{ $businessBackground->location }}</p>
             @endif
-
-            <h1 class="cover-title">
-                {{ $data['business_background']->name }}
-            </h1>
-            <h2 class="cover-subtitle">
-                BUSINESS PLAN
-            </h2>
-
-            <div style="height: 80pt;"></div>
-
-            <div class="cover-info">
-                <p>Disusun pada: {{ $generated_at }}</p>
-                <p>Oleh: {{ $data['business_background']->user->name ?? 'Tim Management' }}</p>
-            </div>
-
-            <div class="cover-footer">
-                <p>Dokumen ini dibuat secara otomatis oleh SMARTPLAN-WEB System</p>
-                <p>© {{ date('Y') }} SMARTPLAN. Hak Cipta Dilindungi.</p>
-            </div>
+            <p style="margin-top: 30px;"><strong>Dibuat pada:</strong> {{ $generatedAt }}</p>
         </div>
     </div>
 
     <!-- Table of Contents -->
-    <div class="page">
-        <div class="header">
-            <div class="company-name">{{ $data['business_background']->name }}</div>
-            <div class="document-title">DAFTAR ISI</div>
-        </div>
-
-        <div class="toc-container">
-            <div class="toc-section">
-                <div class="toc-item">
-                    <span>1. RINGKASAN EKSEKUTIF</span>
-                    <span class="toc-page">3</span>
-                </div>
-            </div>
-
-            <div class="toc-section">
-                <div class="toc-item">
-                    <span>2. LATAR BELAKANG BISNIS</span>
-                    <span class="toc-page">4</span>
-                </div>
-            </div>
-
-            <div class="toc-section">
-                <div class="toc-item">
-                    <span>3. ANALISIS PASAR</span>
-                    <span class="toc-page">5</span>
-                </div>
-                <div class="toc-subitem">
-                    <span>3.1. Target Pasar</span>
-                    <span class="toc-page">5</span>
-                </div>
-                <div class="toc-subitem">
-                    <span>3.2. Analisis Kompetitor</span>
-                    <span class="toc-page">5</span>
-                </div>
-                <div class="toc-subitem">
-                    <span>3.3. Analisis SWOT</span>
-                    <span class="toc-page">6</span>
-                </div>
-                <div class="toc-subitem">
-                    <span>3.4. Ukuran Pasar</span>
-                    <span class="toc-page">6</span>
-                </div>
-            </div>
-
-            <div class="toc-section">
-                <div class="toc-item">
-                    <span>4. PRODUK & LAYANAN</span>
-                    <span class="toc-page">7</span>
-                </div>
-            </div>
-
-            <div class="toc-section">
-                <div class="toc-item">
-                    <span>5. STRATEGI PEMASARAN</span>
-                    <span class="toc-page">8</span>
-                </div>
-            </div>
-
-            <div class="toc-section">
-                <div class="toc-item">
-                    <span>6. RENCANA OPERASIONAL</span>
-                    <span class="toc-page">9</span>
-                </div>
-            </div>
-
-            <div class="toc-section">
-                <div class="toc-item">
-                    <span>7. STRUKTUR TIM</span>
-                    <span class="toc-page">10</span>
-                </div>
-            </div>
-
-            <div class="toc-section">
-                <div class="toc-item">
-                    <span>8. RENCANA KEUANGAN</span>
-                    <span class="toc-page">11</span>
-                </div>
-                @foreach ($data['financial_plans'] as $index => $financial)
-                <div class="toc-subitem">
-                    <span>8.{{ $index + 1 }}. {{ $financial->plan_name }}</span>
-                    <span class="toc-page">11</span>
-                </div>
-                <div class="toc-subitem">
-                    <span>8.{{ $index + 1 }}.1. Ringkasan Keuangan</span>
-                    <span class="toc-page">11</span>
-                </div>
-                <div class="toc-subitem">
-                    <span>8.{{ $index + 1 }}.2. Analisis Profit & Loss</span>
-                    <span class="toc-page">12</span>
-                </div>
-                <div class="toc-subitem">
-                    <span>8.{{ $index + 1 }}.3. Struktur Modal</span>
-                    <span class="toc-page">13</span>
-                </div>
-                <div class="toc-subitem">
-                    <span>8.{{ $index + 1 }}.4. Sumber Pendapatan</span>
-                    <span class="toc-page">14</span>
-                </div>
-                <div class="toc-subitem">
-                    <span>8.{{ $index + 1 }}.5. Grafik Keuangan</span>
-                    <span class="toc-page">15</span>
-                </div>
-                @endforeach
-            </div>
-
-            <div class="toc-section">
-                <div class="toc-item">
-                    <span>LAMPIRAN</span>
-                    <span class="toc-page">16</span>
-                </div>
-            </div>
+    <div class="section">
+        <h2 class="section-title">DAFTAR ISI</h2>
+        <div style="padding: 20px;">
+            <p style="margin: 10px 0;"><strong>1. Latar Belakang Bisnis</strong> .................... 3</p>
+            <p style="margin: 10px 0;"><strong>2. Analisis Pasar</strong> .................... 5</p>
+            <p style="margin: 10px 0;"><strong>3. Produk & Layanan</strong> .................... 7</p>
+            <p style="margin: 10px 0;"><strong>4. Strategi Pemasaran</strong> .................... 9</p>
+            <p style="margin: 10px 0;"><strong>5. Rencana Operasional</strong> .................... 11</p>
+            <p style="margin: 10px 0;"><strong>6. Struktur Tim</strong> .................... 13</p>
+            <p style="margin: 10px 0;"><strong>7. Rencana Keuangan</strong> .................... 15</p>
         </div>
     </div>
 
-    <!-- Executive Summary -->
-    <div class="page">
-        <div class="header">
-            <div class="company-name">{{ $data['business_background']->name }}</div>
-            <div class="document-title">1. RINGKASAN EKSEKUTIF</div>
+    <div class="page-break"></div>
+
+    <!-- 1. Business Background -->
+    <div class="section">
+        <h2 class="section-title">1. LATAR BELAKANG BISNIS</h2>
+
+        <!-- Business Info -->
+        <div class="info-box">
+            <h3>Informasi Perusahaan</h3>
+            <table style="border: none;">
+                <tr>
+                    <td style="border: none; width: 30%;"><strong>Nama Bisnis:</strong></td>
+                    <td style="border: none;">{{ $businessBackground->name }}</td>
+                </tr>
+                <tr>
+                    <td style="border: none;"><strong>Kategori:</strong></td>
+                    <td style="border: none;">
+                        <span class="badge badge-green">{{ $businessBackground->category }}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border: none;"><strong>Tipe Bisnis:</strong></td>
+                    <td style="border: none;">
+                        <span class="badge badge-blue">{{ $businessBackground->business_type }}</span>
+                    </td>
+                </tr>
+                @if($businessBackground->location)
+                <tr>
+                    <td style="border: none;"><strong>Lokasi:</strong></td>
+                    <td style="border: none;">{{ $businessBackground->location }}</td>
+                </tr>
+                @endif
+                @if($businessBackground->start_date)
+                <tr>
+                    <td style="border: none;"><strong>Tanggal Mulai:</strong></td>
+                    <td style="border: none;">{{ \Carbon\Carbon::parse($businessBackground->start_date)->format('d F Y') }}</td>
+                </tr>
+                @endif
+                @if($businessBackground->contact)
+                <tr>
+                    <td style="border: none;"><strong>Kontak:</strong></td>
+                    <td style="border: none;">{{ $businessBackground->contact }}</td>
+                </tr>
+                @endif
+            </table>
         </div>
 
-        <div class="section">
-            <div class="executive-summary">
-                {!! nl2br(e($executiveSummary)) !!}
+        <!-- Description -->
+        <h3 class="subsection-title">Deskripsi Bisnis</h3>
+        <p style="text-align: justify; margin: 15px 0;">{{ $businessBackground->description }}</p>
+
+        <!-- Purpose -->
+        @if($businessBackground->purpose)
+        <h3 class="subsection-title">Tujuan Bisnis</h3>
+        <p style="text-align: justify; margin: 15px 0;">{{ $businessBackground->purpose }}</p>
+        @endif
+
+        <!-- Vision & Mission -->
+        <div class="grid-2">
+            <div class="grid-col">
+                @if($businessBackground->vision)
+                <div class="card">
+                    <h3>Visi</h3>
+                    <p>{{ $businessBackground->vision }}</p>
+                </div>
+                @endif
+            </div>
+            <div class="grid-col">
+                @if($businessBackground->mission)
+                <div class="card">
+                    <h3>Misi</h3>
+                    <p>{{ $businessBackground->mission }}</p>
+                </div>
+                @endif
             </div>
         </div>
 
-        <!-- Signature Section -->
-        <div class="signature-section">
-            <div style="margin-bottom: 20pt;">
-                <p>Dibuat dengan penuh pertimbangan dan analisis mendalam,</p>
-            </div>
-
-            <div style="margin-top: 40pt;">
-                <div class="signature-line"></div>
-                <div class="signature-name">{{ $data['business_background']->user->name ?? 'Management' }}</div>
-                <div class="signature-title">Direktur Utama</div>
-            </div>
+        <!-- Values -->
+        @if($businessBackground->values)
+        <h3 class="subsection-title">Nilai-Nilai Perusahaan</h3>
+        <div class="card" style="background-color: #faf5ff; border-color: #e9d5ff;">
+            <p>{{ $businessBackground->values }}</p>
         </div>
+        @endif
     </div>
 
-    <!-- Business Background -->
-    <div class="page">
-        <div class="header">
-            <div class="company-name">{{ $data['business_background']->name }}</div>
-            <div class="document-title">2. LATAR BELAKANG BISNIS</div>
-        </div>
+    <div class="page-break"></div>
 
-        <div class="section">
-            <div class="subsection">
-                <div class="subsection-title">Informasi Umum Perusahaan</div>
-                <table class="table">
-                    <tr>
-                        <td style="width: 30%;"><strong>Nama Bisnis</strong></td>
-                        <td>{{ $data['business_background']->name }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Kategori Bisnis</strong></td>
-                        <td>{{ $data['business_background']->category }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Lokasi Operasional</strong></td>
-                        <td>{{ $data['business_background']->location }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Tipe Bisnis</strong></td>
-                        <td>{{ $data['business_background']->business_type }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Tanggal Mulai Operasi</strong></td>
-                        <td>{{ $data['business_background']->start_date ? date('d F Y', strtotime($data['business_background']->start_date)) : 'Belum Ditentukan' }}</td>
-                    </tr>
-                </table>
+    <!-- 2. Market Analysis -->
+    @if($marketAnalyses->isNotEmpty())
+    <div class="section">
+        <h2 class="section-title">2. ANALISIS PASAR</h2>
+
+        @foreach($marketAnalyses as $analysis)
+        <div style="margin-bottom: 30px;">
+            <h3 class="subsection-title">{{ $analysis->market_segment }}</h3>
+
+            <div class="info-box">
+                <p><strong>Target Pasar:</strong> {{ $analysis->target_market }}</p>
+                <p><strong>Ukuran Pasar:</strong> {{ $analysis->market_size }}</p>
+                <p><strong>Tren Pasar:</strong> {{ $analysis->market_trends }}</p>
             </div>
 
-            <div class="subsection">
-                <div class="subsection-title">Deskripsi Bisnis</div>
-                <p>{!! nl2br(e($data['business_background']->description)) !!}</p>
-            </div>
-
-            @if ($data['business_background']->purpose)
-            <div class="subsection">
-                <div class="subsection-title">Tujuan Bisnis</div>
-                <p>{!! nl2br(e($data['business_background']->purpose)) !!}</p>
-            </div>
-            @endif
-
-            @if ($data['business_background']->vision)
-            <div class="subsection">
-                <div class="subsection-title">Visi Perusahaan</div>
-                <p class="text-italic">{!! nl2br(e($data['business_background']->vision)) !!}</p>
-            </div>
-            @endif
-
-            @if ($data['business_background']->mission)
-            <div class="subsection">
-                <div class="subsection-title">Misi Perusahaan</div>
-                <p>{!! nl2br(e($data['business_background']->mission)) !!}</p>
-            </div>
-            @endif
-
-            @if ($data['business_background']->values)
-            <div class="subsection">
-                <div class="subsection-title">Nilai-Nilai Perusahaan</div>
-                <p>{!! nl2br(e($data['business_background']->values)) !!}</p>
-            </div>
-            @endif
-        </div>
-    </div>
-
-    <!-- Market Analysis -->
-    @if ($data['market_analysis'])
-    <div class="page">
-        <div class="header">
-            <div class="company-name">{{ $data['business_background']->name }}</div>
-            <div class="document-title">3. ANALISIS PASAR</div>
-        </div>
-
-        <div class="section">
-            @if ($data['market_analysis']->target_market)
-            <div class="subsection">
-                <div class="subsection-title">3.1. Target Pasar</div>
-                <p>{!! nl2br(e($data['market_analysis']->target_market)) !!}</p>
-            </div>
-            @endif
-
-            @if ($data['market_analysis']->market_size)
-            <div class="subsection">
-                <div class="subsection-title">3.2. Ukuran Pasar</div>
-                <p>{!! nl2br(e($data['market_analysis']->market_size)) !!}</p>
-            </div>
-            @endif
-
-            @if ($data['market_analysis']->market_trends)
-            <div class="subsection">
-                <div class="subsection-title">3.3. Tren Pasar</div>
-                <p>{!! nl2br(e($data['market_analysis']->market_trends)) !!}</p>
-            </div>
-            @endif
-
-            <!-- Market Size Metrics -->
-            @if ($data['market_analysis']->tam_total)
-            <div class="subsection">
-                <div class="subsection-title">3.4. Analisis Ukuran Pasar</div>
-                <table class="table">
-                    <tr>
-                        <th style="width: 40%;">Metrik Pasar</th>
-                        <th style="width: 30%;">Nilai (Rp)</th>
-                        <th style="width: 30%;">Keterangan</th>
-                    </tr>
-                    <tr>
-                        <td><strong>Total Addressable Market (TAM)</strong></td>
-                        <td>Rp {{ number_format($data['market_analysis']->tam_total, 0, ',', '.') }}</td>
-                        <td>Total pasar yang tersedia</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Serviceable Available Market (SAM)</strong></td>
-                        <td>Rp {{ number_format($data['market_analysis']->sam_total, 0, ',', '.') }}</td>
-                        <td>Pasar yang dapat dilayani ({{ $data['market_analysis']->sam_percentage }}% dari TAM)</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Serviceable Obtainable Market (SOM)</strong></td>
-                        <td>Rp {{ number_format($data['market_analysis']->som_total, 0, ',', '.') }}</td>
-                        <td>Pasar yang dapat diraih ({{ $data['market_analysis']->som_percentage }}% dari SAM)</td>
-                    </tr>
-                </table>
-            </div>
+            @if($analysis->description)
+            <p style="text-align: justify; margin: 15px 0;">{{ $analysis->description }}</p>
             @endif
 
             <!-- Competitors -->
-            @if ($data['market_analysis']->competitors->count() > 0)
-            <div class="subsection">
-                <div class="subsection-title">3.5. Analisis Kompetitor</div>
-                <table class="table">
+            @if($analysis->competitors && $analysis->competitors->isNotEmpty())
+            <h4 style="color: #16a34a; margin-top: 15px; margin-bottom: 10px;">Analisis Kompetitor</h4>
+            <table>
+                <thead>
                     <tr>
                         <th>Nama Kompetitor</th>
-                        <th>Tipe</th>
-                        <th>Perkiraan Penjualan Tahunan</th>
-                        <th>Harga Rata-rata</th>
                         <th>Kekuatan</th>
                         <th>Kelemahan</th>
                     </tr>
-                    @foreach ($data['market_analysis']->competitors as $competitor)
+                </thead>
+                <tbody>
+                    @foreach($analysis->competitors as $competitor)
                     <tr>
-                        <td>{{ $competitor->competitor_name }}</td>
-                        <td>{{ $competitor->type_label }}</td>
-                        <td>
-                            @if ($competitor->annual_sales_estimate)
-                                Rp {{ number_format($competitor->annual_sales_estimate, 0, ',', '.') }}
-                            @else
-                                -
-                            @endif
-                        </td>
-                        <td>
-                            @if ($competitor->selling_price)
-                                Rp {{ number_format($competitor->selling_price, 0, ',', '.') }}
-                            @else
-                                -
-                            @endif
-                        </td>
-                        <td>{{ $competitor->strengths ? substr($competitor->strengths, 0, 50) . (strlen($competitor->strengths) > 50 ? '...' : '') : '-' }}</td>
-                        <td>{{ $competitor->weaknesses ? substr($competitor->weaknesses, 0, 50) . (strlen($competitor->weaknesses) > 50 ? '...' : '') : '-' }}</td>
+                        <td><strong>{{ $competitor->name }}</strong></td>
+                        <td>{{ $competitor->strengths }}</td>
+                        <td>{{ $competitor->weaknesses }}</td>
                     </tr>
                     @endforeach
-                </table>
-            </div>
-            @endif
-
-            <!-- SWOT Analysis -->
-            @if ($data['market_analysis']->strengths || $data['market_analysis']->weaknesses || $data['market_analysis']->opportunities || $data['market_analysis']->threats)
-            <div class="subsection">
-                <div class="subsection-title">3.6. Analisis SWOT</div>
-                <table class="table">
-                    <tr>
-                        <th style="width: 25%;">Strengths (Kekuatan)</th>
-                        <th style="width: 25%;">Weaknesses (Kelemahan)</th>
-                        <th style="width: 25%;">Opportunities (Peluang)</th>
-                        <th style="width: 25%;">Threats (Ancaman)</th>
-                    </tr>
-                    <tr>
-                        <td>{!! nl2br(e($data['market_analysis']->strengths ?: '-')) !!}</td>
-                        <td>{!! nl2br(e($data['market_analysis']->weaknesses ?: '-')) !!}</td>
-                        <td>{!! nl2br(e($data['market_analysis']->opportunities ?: '-')) !!}</td>
-                        <td>{!! nl2br(e($data['market_analysis']->threats ?: '-')) !!}</td>
-                    </tr>
-                </table>
-            </div>
-            @endif
-
-            @if ($data['market_analysis']->competitive_advantage)
-            <div class="subsection">
-                <div class="subsection-title">3.7. Keunggulan Kompetitif</div>
-                <p>{!! nl2br(e($data['market_analysis']->competitive_advantage)) !!}</p>
-            </div>
+                </tbody>
+            </table>
             @endif
         </div>
+        @endforeach
     </div>
     @endif
 
-    <!-- Products & Services -->
-    @if ($data['products_services']->count() > 0)
-    <div class="page">
-        <div class="header">
-            <div class="company-name">{{ $data['business_background']->name }}</div>
-            <div class="document-title">4. PRODUK & LAYANAN</div>
-        </div>
+    <div class="page-break"></div>
 
-        <div class="section">
-            @foreach ($data['products_services'] as $index => $product)
-            <div class="subsection" style="page-break-inside: avoid;">
-                <div class="subsection-title">
-                    {{ $index + 1 }}. {{ $product->name }} ({{ $product->type === 'product' ? 'Produk' : 'Layanan' }})
+    <!-- 3. Products & Services -->
+    @if($productServices->isNotEmpty())
+    <div class="section">
+        <h2 class="section-title">3. PRODUK & LAYANAN</h2>
+
+        @foreach($productServices as $product)
+        <div class="product-card clearfix">
+            @if(isset($product->image_base64))
+                <img src="{{ $product->image_base64 }}" alt="{{ $product->name }}" class="product-image">
+            @endif
+
+            <h4>{{ $product->name }}</h4>
+            <p><span class="badge badge-yellow">{{ $product->category }}</span></p>
+
+            <p style="margin: 10px 0;"><strong>Deskripsi:</strong></p>
+            <p style="text-align: justify;">{{ $product->description }}</p>
+
+            @if($product->price)
+            <p style="margin: 10px 0;"><strong>Harga:</strong> Rp {{ number_format($product->price, 0, ',', '.') }}</p>
+            @endif
+
+            @if($product->features)
+            <p style="margin: 10px 0;"><strong>Fitur:</strong></p>
+            <p>{{ $product->features }}</p>
+            @endif
+        </div>
+        @endforeach
+    </div>
+    @endif
+
+    <div class="page-break"></div>
+
+    <!-- 4. Marketing Strategy -->
+    @if($marketingStrategies->isNotEmpty())
+    <div class="section">
+        <h2 class="section-title">4. STRATEGI PEMASARAN</h2>
+
+        @foreach($marketingStrategies as $strategy)
+        <div style="margin-bottom: 25px;">
+            <h3 class="subsection-title">{{ $strategy->strategy_name }}</h3>
+
+            <div class="info-box">
+                <p><strong>Channel:</strong> <span class="badge badge-blue">{{ $strategy->channel }}</span></p>
+                @if($strategy->budget)
+                <p><strong>Budget:</strong> Rp {{ number_format($strategy->budget, 0, ',', '.') }}</p>
+                @endif
+                @if($strategy->timeline)
+                <p><strong>Timeline:</strong> {{ $strategy->timeline }}</p>
+                @endif
+            </div>
+
+            @if($strategy->description)
+            <p style="text-align: justify; margin: 15px 0;">{{ $strategy->description }}</p>
+            @endif
+
+            @if($strategy->expected_outcome)
+            <p><strong>Target Hasil:</strong></p>
+            <p style="margin: 10px 0;">{{ $strategy->expected_outcome }}</p>
+            @endif
+        </div>
+        @endforeach
+    </div>
+    @endif
+
+    <div class="page-break"></div>
+
+    <!-- 5. Operational Plan -->
+    @if($operationalPlans->isNotEmpty())
+    <div class="section">
+        <h2 class="section-title">5. RENCANA OPERASIONAL</h2>
+
+        @foreach($operationalPlans as $plan)
+        <div style="margin-bottom: 25px;">
+            <h3 class="subsection-title">{{ $plan->operation_name }}</h3>
+
+            @if($plan->description)
+            <p style="text-align: justify; margin: 15px 0;">{{ $plan->description }}</p>
+            @endif
+
+            <div class="grid-2">
+                <div class="grid-col">
+                    @if($plan->location)
+                    <p><strong>Lokasi:</strong> {{ $plan->location }}</p>
+                    @endif
+                    @if($plan->required_resources)
+                    <p><strong>Sumber Daya:</strong> {{ $plan->required_resources }}</p>
+                    @endif
                 </div>
-
-                <table class="table">
-                    <tr>
-                        <td style="width: 20%;"><strong>Deskripsi</strong></td>
-                        <td>{!! nl2br(e($product->description)) !!}</td>
-                    </tr>
-                    @if ($product->price)
-                    <tr>
-                        <td><strong>Harga</strong></td>
-                        <td>Rp {{ number_format($product->price, 0, ',', '.') }}</td>
-                    </tr>
+                <div class="grid-col">
+                    @if($plan->timeline)
+                    <p><strong>Timeline:</strong> {{ $plan->timeline }}</p>
                     @endif
-                    @if ($product->advantages)
-                    <tr>
-                        <td><strong>Keunggulan</strong></td>
-                        <td>{!! nl2br(e($product->advantages)) !!}</td>
-                    </tr>
+                    @if($plan->responsible_person)
+                    <p><strong>Penanggung Jawab:</strong> {{ $plan->responsible_person }}</p>
                     @endif
-                    @if ($product->development_strategy)
-                    <tr>
-                        <td><strong>Strategi Pengembangan</strong></td>
-                        <td>{!! nl2br(e($product->development_strategy)) !!}</td>
-                    </tr>
-                    @endif
-                    <tr>
-                        <td><strong>Status</strong></td>
-                        <td>
-                            @if ($product->status === 'draft')
-                                <span class="text-italic">Dalam Perencanaan</span>
-                            @elseif($product->status === 'in_development')
-                                <span class="text-italic">Dalam Pengembangan</span>
-                            @else
-                                <span class="text-bold">Sudah Diluncurkan</span>
-                            @endif
-                        </td>
-                    </tr>
-                </table>
+                </div>
             </div>
-            @endforeach
+
+            @if($plan->expected_outcome)
+            <div class="card">
+                <h3>Target Hasil</h3>
+                <p>{{ $plan->expected_outcome }}</p>
+            </div>
+            @endif
         </div>
+        @endforeach
     </div>
     @endif
 
-    <!-- Marketing Strategies -->
-    @if ($data['marketing_strategies']->count() > 0)
-    <div class="page">
-        <div class="header">
-            <div class="company-name">{{ $data['business_background']->name }}</div>
-            <div class="document-title">5. STRATEGI PEMASARAN</div>
-        </div>
+    <div class="page-break"></div>
 
-        <div class="section">
-            @foreach ($data['marketing_strategies'] as $index => $strategy)
-            <div class="subsection">
-                <div class="subsection-title">Strategi {{ $index + 1 }}</div>
-                <table class="table">
-                    <tr>
-                        <td style="width: 20%;"><strong>Strategi Promosi</strong></td>
-                        <td>{!! nl2br(e($strategy->promotion_strategy)) !!}</td>
-                    </tr>
-                    @if ($strategy->media_used)
-                    <tr>
-                        <td><strong>Media yang Digunakan</strong></td>
-                        <td>{!! nl2br(e($strategy->media_used)) !!}</td>
-                    </tr>
-                    @endif
-                    @if ($strategy->pricing_strategy)
-                    <tr>
-                        <td><strong>Strategi Harga</strong></td>
-                        <td>{!! nl2br(e($strategy->pricing_strategy)) !!}</td>
-                    </tr>
-                    @endif
-                    @if ($strategy->monthly_target)
-                    <tr>
-                        <td><strong>Target Bulanan</strong></td>
-                        <td>{{ number_format($strategy->monthly_target, 0, ',', '.') }} unit/transaksi</td>
-                    </tr>
-                    @endif
-                    @if ($strategy->collaboration_plan)
-                    <tr>
-                        <td><strong>Rencana Kolaborasi</strong></td>
-                        <td>{!! nl2br(e($strategy->collaboration_plan)) !!}</td>
-                    </tr>
-                    @endif
-                    <tr>
-                        <td><strong>Status Implementasi</strong></td>
-                        <td>
-                            @if ($strategy->status === 'draft')
-                                <span class="text-italic">Rencana</span>
-                            @else
-                                <span class="text-bold">Sedang Berjalan</span>
-                            @endif
-                        </td>
-                    </tr>
-                </table>
-            </div>
-            @endforeach
+    <!-- 6. Team Structure -->
+    @if($teamStructures->isNotEmpty())
+    <div class="section">
+        <h2 class="section-title">6. STRUKTUR TIM</h2>
+
+        @foreach($teamStructures as $member)
+        <div class="team-card clearfix">
+            @if(isset($member->photo_base64))
+                <img src="{{ $member->photo_base64 }}" alt="{{ $member->name }}" class="team-photo">
+            @endif
+
+            <h4>{{ $member->name }}</h4>
+            <p class="position">{{ $member->position }}</p>
+
+            @if($member->qualifications)
+            <p><strong>Kualifikasi:</strong> {{ $member->qualifications }}</p>
+            @endif
+
+            @if($member->experience)
+            <p><strong>Pengalaman:</strong> {{ $member->experience }}</p>
+            @endif
+
+            @if($member->responsibilities)
+            <p><strong>Tanggung Jawab:</strong></p>
+            <p>{{ $member->responsibilities }}</p>
+            @endif
+
+            @if($member->contact)
+            <p><strong>Kontak:</strong> {{ $member->contact }}</p>
+            @endif
         </div>
+        @endforeach
     </div>
     @endif
 
-    <!-- Operational Plans -->
-    @if ($data['operational_plans']->count() > 0)
-    <div class="page">
-        <div class="header">
-            <div class="company-name">{{ $data['business_background']->name }}</div>
-            <div class="document-title">6. RENCANA OPERASIONAL</div>
-        </div>
+    <div class="page-break"></div>
 
-        <div class="section">
-            @foreach ($data['operational_plans'] as $index => $plan)
-            <div class="subsection">
-                <div class="subsection-title">Rencana Operasional {{ $index + 1 }}</div>
-                <table class="table">
-                    <tr>
-                        <td style="width: 20%;"><strong>Lokasi Bisnis</strong></td>
-                        <td>{{ $plan->business_location }}</td>
-                    </tr>
-                    @if ($plan->location_description)
-                    <tr>
-                        <td><strong>Deskripsi Lokasi</strong></td>
-                        <td>{!! nl2br(e($plan->location_description)) !!}</td>
-                    </tr>
-                    @endif
-                    <tr>
-                        <td><strong>Tipe Lokasi</strong></td>
-                        <td>{{ $plan->location_type }}</td>
-                    </tr>
-                    @if ($plan->location_size)
-                    <tr>
-                        <td><strong>Ukuran Lokasi</strong></td>
-                        <td>{{ number_format($plan->location_size, 0, ',', '.') }} m²</td>
-                    </tr>
-                    @endif
-                    @if ($plan->rent_cost)
-                    <tr>
-                        <td><strong>Biaya Sewa</strong></td>
-                        <td>Rp {{ number_format($plan->rent_cost, 0, ',', '.') }}/bulan</td>
-                    </tr>
-                    @endif
-                    @if ($plan->daily_workflow)
-                    <tr>
-                        <td><strong>Alur Kerja Harian</strong></td>
-                        <td>{!! nl2br(e($plan->daily_workflow)) !!}</td>
-                    </tr>
-                    @endif
-                    @if ($plan->equipment_needs)
-                    <tr>
-                        <td><strong>Kebutuhan Peralatan</strong></td>
-                        <td>{!! nl2br(e($plan->equipment_needs)) !!}</td>
-                    </tr>
-                    @endif
-                    @if ($plan->technology_stack)
-                    <tr>
-                        <td><strong>Teknologi yang Digunakan</strong></td>
-                        <td>{!! nl2br(e($plan->technology_stack)) !!}</td>
-                    </tr>
-                    @endif
-                </table>
-            </div>
-            @endforeach
-        </div>
-    </div>
-    @endif
+    <!-- 7. Financial Plan -->
+    @if($financialPlans->isNotEmpty())
+    <div class="section">
+        <h2 class="section-title">7. RENCANA KEUANGAN</h2>
 
-    <!-- Team Structure -->
-    @if ($data['team_structures']->count() > 0)
-    <div class="page">
-        <div class="header">
-            <div class="company-name">{{ $data['business_background']->name }}</div>
-            <div class="document-title">7. STRUKTUR TIM</div>
-        </div>
-
-        <div class="section">
-            <table class="table">
+        <table>
+            <thead>
                 <tr>
-                    <th>Kategori Tim</th>
-                    <th>Nama Anggota</th>
-                    <th>Posisi/Jabatan</th>
-                    <th>Pengalaman & Kualifikasi</th>
+                    <th>Periode</th>
+                    <th>Pendapatan</th>
+                    <th>Pengeluaran</th>
+                    <th>Laba/Rugi</th>
                 </tr>
-                @foreach ($data['team_structures'] as $member)
+            </thead>
+            <tbody>
+                @foreach($financialPlans as $plan)
                 <tr>
-                    <td>{{ $member->team_category }}</td>
-                    <td>{{ $member->member_name }}</td>
-                    <td>{{ $member->position }}</td>
-                    <td>{!! nl2br(e($member->experience)) !!}</td>
+                    <td><strong>{{ $plan->period }}</strong></td>
+                    <td>Rp {{ number_format($plan->revenue, 0, ',', '.') }}</td>
+                    <td>Rp {{ number_format($plan->expenses, 0, ',', '.') }}</td>
+                    <td style="color: {{ ($plan->revenue - $plan->expenses) >= 0 ? '#16a34a' : '#dc2626' }}; font-weight: bold;">
+                        Rp {{ number_format($plan->revenue - $plan->expenses, 0, ',', '.') }}
+                    </td>
                 </tr>
                 @endforeach
+            </tbody>
+        </table>
+
+        @php
+            $totalRevenue = $financialPlans->sum('revenue');
+            $totalExpenses = $financialPlans->sum('expenses');
+            $totalProfit = $totalRevenue - $totalExpenses;
+        @endphp
+
+        <div class="info-box" style="margin-top: 20px;">
+            <h3>Ringkasan Keuangan</h3>
+            <table style="border: none;">
+                <tr>
+                    <td style="border: none; width: 50%;"><strong>Total Pendapatan:</strong></td>
+                    <td style="border: none; text-align: right;">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</td>
+                </tr>
+                <tr>
+                    <td style="border: none;"><strong>Total Pengeluaran:</strong></td>
+                    <td style="border: none; text-align: right;">Rp {{ number_format($totalExpenses, 0, ',', '.') }}</td>
+                </tr>
+                <tr>
+                    <td style="border: none;"><strong>Total Laba/Rugi:</strong></td>
+                    <td style="border: none; text-align: right; color: {{ $totalProfit >= 0 ? '#16a34a' : '#dc2626' }}; font-weight: bold;">
+                        Rp {{ number_format($totalProfit, 0, ',', '.') }}
+                    </td>
+                </tr>
             </table>
         </div>
     </div>
     @endif
 
-    <!-- Financial Plans -->
-    @if ($data['financial_plans']->count() > 0)
-        @foreach ($data['financial_plans'] as $index => $financial)
-        <!-- Financial Plan Main Page -->
-        <div class="page">
-            <div class="header">
-                <div class="company-name">{{ $data['business_background']->name }}</div>
-                <div class="document-title">8. {{ $index + 1 }}. RENCANA KEUANGAN - {{ $financial->plan_name }}</div>
-            </div>
-
-            <div class="section">
-                <div class="subsection">
-                    <div class="subsection-title">{{ $financial->plan_name }}</div>
-
-                    <!-- Financial Highlights -->
-                    <div class="financial-highlights mb-15">
-                        <div class="subsection-title">8.{{ $index + 1 }}.1. Ringkasan Keuangan</div>
-                        <table class="table">
-                            <tr>
-                                <td><strong>ROI (Return on Investment)</strong></td>
-                                <td>{{ $financial->roi_percentage }}%</td>
-                                <td><strong>Payback Period</strong></td>
-                                <td>{{ $financial->payback_period }} bulan</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Profit Margin</strong></td>
-                                <td>{{ $financial->profit_margin }}%</td>
-                                <td><strong>Status Kelayakan</strong></td>
-                                <td>{{ $financial->feasibility_status }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Total Modal Awal</strong></td>
-                                <td>Rp {{ number_format($financial->total_initial_capital, 0, ',', '.') }}</td>
-                                <td><strong>Pendapatan Tahunan Proyeksi</strong></td>
-                                <td>Rp {{ number_format($financial->total_yearly_income, 0, ',', '.') }}</td>
-                            </tr>
-                        </table>
-                    </div>
-
-                    <!-- Capital Sources -->
-                    @if ($financial->capital_sources)
-                    <div class="subsection">
-                        <div class="subsection-title">8.{{ $index + 1 }}.2. Struktur Modal</div>
-                        <table class="table">
-                            <tr>
-                                <th>Sumber Modal</th>
-                                <th>Jumlah (Rp)</th>
-                                <th>Persentase</th>
-                            </tr>
-                            @foreach ($financial->capital_sources as $source)
-                            <tr>
-                                <td>{{ $source['source'] }}</td>
-                                <td>Rp {{ number_format($source['amount'], 0, ',', '.') }}</td>
-                                <td>{{ $source['percentage'] }}%</td>
-                            </tr>
-                            @endforeach
-                            <tr class="text-bold">
-                                <td><strong>Total Modal Awal</strong></td>
-                                <td colspan="2"><strong>Rp {{ number_format($financial->total_initial_capital, 0, ',', '.') }}</strong></td>
-                            </tr>
-                        </table>
-                    </div>
-                    @endif
-
-                    <!-- Sales Projections -->
-                    @if ($financial->sales_projections)
-                    <div class="subsection">
-                        <div class="subsection-title">8.{{ $index + 1 }}.3. Proyeksi Penjualan</div>
-                        <table class="table">
-                            <tr>
-                                <th>Produk/Layanan</th>
-                                <th>Harga per Unit</th>
-                                <th>Volume/Bulan</th>
-                                <th>Pendapatan/Bulan</th>
-                            </tr>
-                            @foreach ($financial->sales_projections as $projection)
-                            <tr>
-                                <td>{{ $projection['product'] }}</td>
-                                <td>Rp {{ number_format($projection['price'], 0, ',', '.') }}</td>
-                                <td>{{ number_format($projection['volume'], 0, ',', '.') }} unit</td>
-                                <td>Rp {{ number_format($projection['monthly_income'], 0, ',', '.') }}</td>
-                            </tr>
-                            @endforeach
-                            <tr class="text-bold">
-                                <td colspan="3"><strong>Total Pendapatan Bulanan</strong></td>
-                                <td><strong>Rp {{ number_format($financial->total_monthly_income, 0, ',', '.') }}</strong></td>
-                            </tr>
-                            <tr class="text-bold">
-                                <td colspan="3"><strong>Total Pendapatan Tahunan</strong></td>
-                                <td><strong>Rp {{ number_format($financial->total_yearly_income, 0, ',', '.') }}</strong></td>
-                            </tr>
-                        </table>
-                    </div>
-                    @endif
-
-                    <!-- Profit Loss Summary -->
-                    <div class="subsection">
-                        <div class="subsection-title">8.{{ $index + 1 }}.4. Ringkasan Laba Rugi (Bulanan)</div>
-                        <table class="table">
-                            <tr>
-                                <td><strong>Pendapatan Bulanan</strong></td>
-                                <td class="text-right">Rp {{ number_format($financial->total_monthly_income, 0, ',', '.') }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Biaya Operasional Bulanan</strong></td>
-                                <td class="text-right">Rp {{ number_format($financial->total_monthly_opex, 0, ',', '.') }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Laba Kotor</strong></td>
-                                <td class="text-right">Rp {{ number_format($financial->gross_profit, 0, ',', '.') }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Pajak ({{ $financial->tax_rate }}%)</strong></td>
-                                <td class="text-right">Rp {{ number_format($financial->tax_amount, 0, ',', '.') }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Biaya Bunga</strong></td>
-                                <td class="text-right">Rp {{ number_format($financial->interest_expense, 0, ',', '.') }}</td>
-                            </tr>
-                            <tr class="text-bold">
-                                <td><strong>Laba Bersih Bulanan</strong></td>
-                                <td class="text-right">Rp {{ number_format($financial->net_profit, 0, ',', '.') }}</td>
-                            </tr>
-                        </table>
-                    </div>
-
-                    @if ($financial->feasibility_notes)
-                    <div class="subsection">
-                        <div class="subsection-title">8.{{ $index + 1 }}.5. Analisis Kelayakan</div>
-                        <p>{!! nl2br(e($financial->feasibility_notes)) !!}</p>
-                    </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <!-- Chart Data Pages -->
-        @if (isset($chartData[$financial->id]))
-        <!-- Profit & Loss Chart Data -->
-        <div class="page">
-            <div class="header">
-                <div class="company-name">{{ $data['business_background']->name }}</div>
-                <div class="document-title">ANALISIS PROFIT & LOSS - {{ $financial->plan_name }}</div>
-            </div>
-
-            <div class="section">
-                <div class="chart-container">
-                    <div class="chart-title">ANALISIS PROFIT & LOSS (Bulanan)</div>
-                    <table class="chart-table">
-                        @foreach ($chartData[$financial->id]['profit_loss'] as $rowIndex => $row)
-                        <tr class="{{ $rowIndex === 0 ? '' : ($rowIndex === count($chartData[$financial->id]['profit_loss'])-1 ? 'total-row' : '') }}">
-                            @foreach ($row as $cell)
-                            <td>{{ $cell }}</td>
-                            @endforeach
-                        </tr>
-                        @endforeach
-                    </table>
-                </div>
-
-                <div class="chart-container">
-                    <div class="chart-title">METRIK KEUANGAN UTAMA</div>
-                    <table class="chart-table">
-                        @foreach ($chartData[$financial->id]['financial_metrics'] as $rowIndex => $row)
-                        <tr class="{{ $rowIndex === 0 ? '' : '' }}">
-                            @foreach ($row as $cell)
-                            <td>{{ $cell }}</td>
-                            @endforeach
-                        </tr>
-                        @endforeach
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Revenue Streams Chart Data -->
-        <div class="page">
-            <div class="header">
-                <div class="company-name">{{ $data['business_background']->name }}</div>
-                <div class="document-title">SUMBER PENDAPATAN - {{ $financial->plan_name }}</div>
-            </div>
-
-            <div class="section">
-                <div class="chart-container">
-                    <div class="chart-title">DETAIL SUMBER PENDAPATAN</div>
-                    <table class="chart-table">
-                        @foreach ($chartData[$financial->id]['revenue_streams'] as $rowIndex => $row)
-                        <tr class="{{ $rowIndex === 0 ? '' : ($rowIndex === count($chartData[$financial->id]['revenue_streams'])-1 ? 'total-row' : '') }}">
-                            @foreach ($row as $cell)
-                            <td>{{ $cell }}</td>
-                            @endforeach
-                        </tr>
-                        @endforeach
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Capital Structure Chart Data -->
-        <div class="page">
-            <div class="header">
-                <div class="company-name">{{ $data['business_background']->name }}</div>
-                <div class="document-title">STRUKTUR MODAL - {{ $financial->plan_name }}</div>
-            </div>
-
-            <div class="section">
-                <div class="chart-container">
-                    <div class="chart-title">KOMPOSISI SUMBER MODAL</div>
-                    <table class="chart-table">
-                        @foreach ($chartData[$financial->id]['capital_structure'] as $rowIndex => $row)
-                        <tr class="{{ $rowIndex === 0 ? '' : ($rowIndex === count($chartData[$financial->id]['capital_structure'])-1 ? 'total-row' : '') }}">
-                            @foreach ($row as $cell)
-                            <td>{{ $cell }}</td>
-                            @endforeach
-                        </tr>
-                        @endforeach
-                    </table>
-                </div>
-            </div>
-        </div>
-        @endif
-
-        <!-- Chart Images Pages -->
-        @if (isset($chartImages[$financial->id]))
-        <div class="page">
-            <div class="header">
-                <div class="company-name">{{ $data['business_background']->name }}</div>
-                <div class="document-title">GRAFIK KEUANGAN - {{ $financial->plan_name }}</div>
-            </div>
-
-            <div class="section">
-                @if (isset($chartImages[$financial->id]['profit_loss']))
-                <div class="chart-section">
-                    <div class="chart-title">GRAFIK PROFIT & LOSS</div>
-                    <img src="{{ $chartImages[$financial->id]['profit_loss'] }}"
-                         class="chart-image"
-                         alt="Profit Loss Chart">
-                </div>
-                @endif
-
-                @if (isset($chartImages[$financial->id]['revenue_streams']))
-                <div class="chart-section">
-                    <div class="chart-title">GRAFIK SUMBER PENDAPATAN</div>
-                    <img src="{{ $chartImages[$financial->id]['revenue_streams'] }}"
-                         class="chart-image"
-                         alt="Revenue Streams Chart">
-                </div>
-                @endif
-
-                @if (isset($chartImages[$financial->id]['capital_structure']))
-                <div class="chart-section">
-                    <div class="chart-title">GRAFIK STRUKTUR MODAL</div>
-                    <img src="{{ $chartImages[$financial->id]['capital_structure'] }}"
-                         class="chart-image"
-                         alt="Capital Structure Chart">
-                </div>
-                @endif
-            </div>
-        </div>
-        @endif
-        @endforeach
-    @endif
-
-    <!-- Appendix -->
-    <div class="page">
-        <div class="header">
-            <div class="company-name">{{ $data['business_background']->name }}</div>
-            <div class="document-title">LAMPIRAN</div>
-        </div>
-
-        <div class="section">
-            <div class="subsection">
-                <div class="subsection-title">Informasi Dokumen</div>
-                <table class="table">
-                    <tr>
-                        <td style="width: 30%;"><strong>Nama Dokumen</strong></td>
-                        <td>Business Plan - {{ $data['business_background']->name }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Tanggal Generate</strong></td>
-                        <td>{{ $generated_at }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Mode Dokumen</strong></td>
-                        <td>{{ $mode === 'free' ? 'Versi Gratis' : 'Versi Professional' }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Total Halaman</strong></td>
-                        <td><span class="page-number"></span></td>
-                    </tr>
-                </table>
-            </div>
-
-            <div class="subsection">
-                <div class="subsection-title">Kontak</div>
-                <p>Untuk informasi lebih lanjut mengenai business plan ini, silakan hubungi:</p>
-                <table class="table">
-                    <tr>
-                        <td style="width: 30%;"><strong>Nama Perusahaan</strong></td>
-                        <td>{{ $data['business_background']->name }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Pemilik/Direktur</strong></td>
-                        <td>{{ $data['business_background']->user->name ?? 'Tim Management' }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Lokasi</strong></td>
-                        <td>{{ $data['business_background']->location }}</td>
-                    </tr>
-                </table>
-            </div>
-
-            <div class="subsection">
-                <div class="subsection-title">Pernyataan</div>
-                <p class="text-italic">
-                    Dokumen business plan ini disusun dengan sebaik-baiknya berdasarkan data dan informasi
-                    yang tersedia pada saat penyusunan. Semua proyeksi dan perkiraan yang tercantum dalam
-                    dokumen ini merupakan estimasi yang dapat berubah sesuai dengan kondisi pasar dan
-                    perkembangan bisnis yang aktual.
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer untuk semua halaman -->
+    <!-- Footer -->
     <div class="footer">
-        <div style="float: left;">
-            {{ $data['business_background']->name }} - Business Plan
-        </div>
-        <div style="float: right;" class="page-number"></div>
-        <div style="clear: both;"></div>
+        <p>{{ $businessBackground->name }} - Business Plan</p>
+        <p>Dibuat dengan SmartPlan {{ $isPro ? 'Pro' : 'Free' }} | {{ $generatedAt }}</p>
     </div>
 </body>
 </html>

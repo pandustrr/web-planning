@@ -126,13 +126,10 @@ Route::prefix('team-structure')->group(function () {
         Route::get('/{id}/charts', [FinancialPlanController::class, 'getChartData']);
     });
 
-// PDF Business Plan Routes
-Route::prefix('pdf-business-plan')->middleware('auth:sanctum')->group(function () {
-    Route::post('/generate', [PdfBusinessPlanController::class, 'generatePdf']);
-    Route::post('/executive-summary', [PdfBusinessPlanController::class, 'generateExecutiveSummary']);
-    Route::get('/statistics', [PdfBusinessPlanController::class, 'getPdfStatistics']);
-});
 
+// PDF Business Plan Routes - tanpa middleware sanctum (handle token manual)
+Route::get('business-plan/generate-pdf', [PdfBusinessPlanController::class, 'generatePdf']);
+Route::get('business-plan/preview-pdf', [PdfBusinessPlanController::class, 'previewPdf']);
 
 Route::prefix('user')->group(function () {
     Route::get('/{id}', [UserController::class, 'show']);

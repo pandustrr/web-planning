@@ -3,29 +3,37 @@ import { BarChart3, PieChart, TrendingUp, DollarSign, Download, Calendar } from 
 import { financialPlanApi } from '../../../services/businessPlan';
 import { toast } from 'react-toastify';
 
-// Recharts untuk charting
+// Chart.js imports
 import {
-    BarChart,
-    Bar,
-    LineChart,
-    Line,
-    PieChart as RePieChart,
-    Pie,
-    Cell,
-    XAxis,
-    YAxis,
-    CartesianGrid,
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    LineElement,
+    PointElement,
+    ArcElement,
+    Title,
     Tooltip,
     Legend,
-    ResponsiveContainer,
-    AreaChart,
-    Area,
-    RadarChart,
-    Radar,
-    PolarGrid,
-    PolarAngleAxis,
-    PolarRadiusAxis
-} from 'recharts';
+    Filler,
+    RadialLinearScale
+} from 'chart.js';
+import { Bar, Line, Pie, Doughnut, Radar } from 'react-chartjs-2';
+
+// Register Chart.js components
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    LineElement,
+    PointElement,
+    ArcElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler,
+    RadialLinearScale
+);
 
 const FinancialPlanCharts = ({ plan, onBack }) => {
     const [activeChart, setActiveChart] = useState('profit_loss');
@@ -43,7 +51,84 @@ const FinancialPlanCharts = ({ plan, onBack }) => {
         { id: 'forecast', name: 'Proyeksi Masa Depan', icon: '🔮', color: '#8b5cf6' }
     ];
 
-    // Warna untuk chart
+    // Chart options configuration
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: {
+                    color: '#6b7280',
+                    font: {
+                        size: 12
+                    }
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                titleColor: '#1f2937',
+                bodyColor: '#374151',
+                borderColor: '#e5e7eb',
+                borderWidth: 1,
+                callbacks: {
+                    label: function (context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.y !== null) {
+                            if (label.includes('Rp') || label.includes('Pendapatan') || label.includes('Biaya') || label.includes('Laba')) {
+                                label += new Intl.NumberFormat('id-ID', {
+                                    style: 'currency',
+                                    currency: 'IDR',
+                                    minimumFractionDigits: 0,
+                                }).format(context.parsed.y);
+                            } else if (label.includes('%') || label.includes('ROI') || label.includes('Margin')) {
+                                label += context.parsed.y + '%';
+                            } else if (label.includes('Bulan')) {
+                                label += context.parsed.y + ' bulan';
+                            } else {
+                                label += context.parsed.y;
+                            }
+                        }
+                        return label;
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: 'rgba(229, 231, 235, 0.3)'
+                },
+                ticks: {
+                    color: '#6b7280',
+                    callback: function (value) {
+                        if (activeChart === 'profit_loss' || activeChart === 'cash_flow' || activeChart === 'revenue_streams' || activeChart === 'expense_breakdown' || activeChart === 'forecast') {
+                            if (value >= 1000000) {
+                                return 'Rp' + (value / 1000000).toFixed(1) + 'Jt';
+                            } else if (value >= 1000) {
+                                return 'Rp' + (value / 1000).toFixed(0) + 'Rb';
+                            }
+                            return 'Rp' + value;
+                        }
+                        return value;
+                    }
+                }
+            },
+            x: {
+                grid: {
+                    color: 'rgba(229, 231, 235, 0.3)'
+                },
+                ticks: {
+                    color: '#6b7280'
+                }
+            }
+        }
+    };
+
     const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316', '#ec4899'];
 
     useEffect(() => {
@@ -69,7 +154,6 @@ const FinancialPlanCharts = ({ plan, onBack }) => {
         } catch (error) {
             console.error('Error fetching chart data:', error);
             toast.error('Gagal memuat data chart');
-            // Fallback data jika API error
             setChartData(generateFallbackData());
         } finally {
             setIsLoading(false);
@@ -89,7 +173,6 @@ const FinancialPlanCharts = ({ plan, onBack }) => {
         }
     };
 
-    // Generate fallback data dari plan data
     const generateFallbackData = () => {
         switch (activeChart) {
             case 'profit_loss':
@@ -109,16 +192,6 @@ const FinancialPlanCharts = ({ plan, onBack }) => {
                     labels: capitalSources.map(source => source.source),
                     values: capitalSources.map(source => source.amount),
                     percentages: capitalSources.map(source => source.percentage)
-                };
-
-            case 'cash_flow':
-                // Generate monthly cash flow data
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-                return {
-                    labels: months,
-                    income: months.map(() => Math.random() * (plan.total_monthly_income || 10000000) * 1.2),
-                    expense: months.map(() => Math.random() * (plan.total_monthly_opex || 5000000) * 1.1),
-                    net_flow: months.map((_, i) => (Math.random() * (plan.total_monthly_income || 10000000) * 1.2) - (Math.random() * (plan.total_monthly_opex || 5000000) * 1.1))
                 };
 
             case 'revenue_streams':
@@ -155,18 +228,17 @@ const FinancialPlanCharts = ({ plan, onBack }) => {
         return months.map((month, index) => {
             const baseIncome = plan.total_monthly_income || 10000000;
             const baseOpex = plan.total_monthly_opex || 5000000;
-            const growth = 1 + (index * 0.05); // 5% growth per month
+            const growth = 1 + (index * 0.05);
 
             return {
                 month,
                 projected_income: baseIncome * growth,
-                projected_opex: baseOpex * (1 + (index * 0.02)), // 2% growth per month
+                projected_opex: baseOpex * (1 + (index * 0.02)),
                 projected_profit: (baseIncome * growth) - (baseOpex * (1 + (index * 0.02)))
             };
         });
     };
 
-    // Format currency untuk tooltip
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -176,127 +248,113 @@ const FinancialPlanCharts = ({ plan, onBack }) => {
         }).format(value);
     };
 
-    // Custom tooltip untuk chart
-    const CustomTooltip = ({ active, payload, label }) => {
-        if (active && payload && payload.length) {
-            return (
-                <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg">
-                    <p className="font-medium text-gray-900 dark:text-white">{label}</p>
-                    {payload.map((entry, index) => (
-                        <p key={index} style={{ color: entry.color }} className="text-sm text-gray-700 dark:text-gray-300">
-                            {entry.name}: {entry.name.includes('Rp') ? formatCurrency(entry.value) : entry.value}
-                            {entry.name.includes('%') && '%'}
-                            {entry.name.includes('Bulan') && ' bulan'}
-                        </p>
-                    ))}
-                </div>
-            );
-        }
-        return null;
-    };
-
-    // Render chart berdasarkan type
+    // Render chart berdasarkan type dengan Chart.js
     const renderChart = () => {
         if (!chartData) return null;
 
         switch (activeChart) {
             case 'profit_loss':
-                const profitLossData = chartData.labels?.map((label, index) => ({
-                    name: label,
-                    value: chartData.values?.[index] || 0,
-                    fill: index === 0 ? '#10b981'
-                        : index === 1 ? '#ef4444'
-                            : index === 2 ? '#f59e0b'
-                                : '#4f46e5'
-                })) || [];
+                const profitLossData = {
+                    labels: chartData.labels || ['Pendapatan', 'Biaya Operasional', 'Laba Kotor', 'Laba Bersih'],
+                    datasets: [
+                        {
+                            label: 'Nilai (Rp)',
+                            data: chartData.values || [0, 0, 0, 0],
+                            backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#4f46e5'],
+                            borderColor: ['#10b981', '#ef4444', '#f59e0b', '#4f46e5'],
+                            borderWidth: 1,
+                            borderRadius: 4,
+                        }
+                    ]
+                };
 
                 return (
-                    <ResponsiveContainer width="100%" height={400}>
-                        <BarChart data={profitLossData}>
-                            <CartesianGrid
-                                strokeDasharray="3 3"
-                                className="opacity-30"
-                                stroke="#e5e7eb"
-                            />
-
-                            <XAxis
-                                dataKey="name"
-                                tick={{ fill: '#6b7280', fontSize: 12 }}
-                                className="text-gray-500 dark:text-gray-400"
-                            />
-
-                            <YAxis
-                                tickFormatter={formatCurrency}
-                                tick={{ fill: '#6b7280', fontSize: 12 }}
-                                className="text-gray-500 dark:text-gray-400"
-                            />
-
-                            <Tooltip content={<CustomTooltip />} />
-
-                            <Legend
-                                formatter={(value) => (
-                                    <span className="text-gray-600 dark:text-gray-300">
-                                        {value}
-                                    </span>
-                                )}
-                            />
-
-                            <Bar
-                                dataKey="value"
-                                name="Nilai (Rp)"
-                                radius={[4, 4, 0, 0]}
-                            >
-                                {profitLossData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
+                    <div className="h-96">
+                        <Bar
+                            data={profitLossData}
+                            options={{
+                                ...chartOptions,
+                                plugins: {
+                                    ...chartOptions.plugins,
+                                    title: {
+                                        display: true,
+                                        text: 'Analisis Laba Rugi Bulanan',
+                                        color: '#1f2937',
+                                        font: {
+                                            size: 16
+                                        }
+                                    }
+                                }
+                            }}
+                        />
+                    </div>
                 );
 
-
             case 'capital_structure':
-                const capitalData = chartData.labels?.map((label, index) => ({
-                    name: label,
-                    value: chartData.values?.[index] || 0,
-                    percentage: chartData.percentages?.[index] || 0
-                })) || [];
+                const capitalData = {
+                    labels: chartData.labels || [],
+                    datasets: [
+                        {
+                            data: chartData.values || [],
+                            backgroundColor: COLORS,
+                            borderColor: COLORS.map(color => color),
+                            borderWidth: 1,
+                        }
+                    ]
+                };
 
                 return (
                     <div className="flex flex-col lg:flex-row gap-8 items-center">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <RePieChart>
-                                <Pie
-                                    data={capitalData}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={false}
-                                    label={({ name, percentage }) => `${name}: ${percentage}%`}
-                                    outerRadius={80}
-                                    fill="#8884d8"
-                                    dataKey="value"
-                                >
-                                    {capitalData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip formatter={(value) => [formatCurrency(value), 'Nominal']} />
-                            </RePieChart>
-                        </ResponsiveContainer>
+                        <div className="h-80 lg:h-96 lg:flex-1">
+                            <Doughnut
+                                data={capitalData}
+                                options={{
+                                    ...chartOptions,
+                                    plugins: {
+                                        ...chartOptions.plugins,
+                                        title: {
+                                            display: true,
+                                            text: 'Struktur Modal',
+                                            color: '#1f2937',
+                                            font: {
+                                                size: 16
+                                            }
+                                        },
+                                        tooltip: {
+                                            ...chartOptions.plugins.tooltip,
+                                            callbacks: {
+                                                label: function (context) {
+                                                    const label = context.label || '';
+                                                    const value = context.parsed;
+                                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                    const percentage = Math.round((value / total) * 100);
+                                                    return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }}
+                            />
+                        </div>
 
                         <div className="space-y-2 min-w-[200px]">
-                            {capitalData.map((item, index) => (
+                            <h4 className="font-medium text-gray-900 dark:text-white mb-3">Detail Modal</h4>
+                            {chartData.labels?.map((label, index) => (
                                 <div key={index} className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div
                                             className="w-3 h-3 rounded"
                                             style={{ backgroundColor: COLORS[index % COLORS.length] }}
                                         />
-                                        <span className="text-sm text-gray-700 dark:text-gray-300">{item.name}</span>
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
                                     </div>
                                     <div className="text-right">
-                                        <div className="font-medium text-gray-900 dark:text-white">{formatCurrency(item.value)}</div>
-                                        <div className="text-xs text-gray-500 dark:text-gray-400">{item.percentage}%</div>
+                                        <div className="font-medium text-gray-900 dark:text-white">
+                                            {formatCurrency(chartData.values?.[index] || 0)}
+                                        </div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                            {chartData.percentages?.[index] || 0}%
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -304,124 +362,122 @@ const FinancialPlanCharts = ({ plan, onBack }) => {
                     </div>
                 );
 
-            case 'cash_flow':
-                const cashFlowData = chartData.labels?.map((label, index) => ({
-                    month: label,
-                    income: chartData.income?.[index] || 0,
-                    expense: chartData.expense?.[index] || 0,
-                    net: chartData.net_flow?.[index] || 0
-                })) || [];
-
-                return (
-                    <ResponsiveContainer width="100%" height={400}>
-                        <AreaChart data={cashFlowData}>
-                            <CartesianGrid strokeDasharray="3 3" className="opacity-30" stroke="#e5e7eb dark:stroke-gray-600" />
-                            <XAxis
-                                dataKey="month"
-                                tick={{ fill: '#6b7280', fontSize: 12 }}
-                                className="text-gray-500 dark:text-gray-400"
-                            />
-                            <YAxis
-                                tickFormatter={formatCurrency}
-                                tick={{ fill: '#6b7280', fontSize: 12 }}
-                                className="text-gray-500 dark:text-gray-400"
-                            />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend />
-                            <Area type="monotone" dataKey="income" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.6} name="Kas Masuk" />
-                            <Area type="monotone" dataKey="expense" stackId="1" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} name="Kas Keluar" />
-                            <Area type="monotone" dataKey="net" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.6} name="Net Cash Flow" />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                );
-
             case 'revenue_streams':
-                const revenueData = chartData.labels?.map((label, index) => ({
-                    product: label.length > 15 ? label.substring(0, 15) + '...' : label,
-                    revenue: chartData.values?.[index] || 0,
-                    fullName: label
-                })) || [];
+                const revenueData = {
+                    labels: chartData.labels?.map(label =>
+                        label.length > 15 ? label.substring(0, 15) + '...' : label
+                    ) || [],
+                    datasets: [
+                        {
+                            label: 'Pendapatan/Bulan',
+                            data: chartData.values || [],
+                            backgroundColor: '#4f46e5',
+                            borderColor: '#4f46e5',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                        }
+                    ]
+                };
 
                 return (
-                    <ResponsiveContainer width="100%" height={400}>
-                        <BarChart data={revenueData} layout="vertical">
-                            <CartesianGrid strokeDasharray="3 3" className="opacity-30" horizontal={false} stroke="#e5e7eb dark:stroke-gray-600" />
-                            <XAxis
-                                type="number"
-                                tickFormatter={formatCurrency}
-                                tick={{ fill: '#6b7280', fontSize: 12 }}
-                                className="text-gray-500 dark:text-gray-400"
-                            />
-                            <YAxis
-                                type="category"
-                                dataKey="product"
-                                width={100}
-                                tick={{ fontSize: 12, fill: '#6b7280' }}
-                                className="text-gray-500 dark:text-gray-400"
-                            />
-                            <Tooltip
-                                formatter={(value) => [formatCurrency(value), 'Pendapatan']}
-                                labelFormatter={(value, payload) => {
-                                    const data = payload[0]?.payload;
-                                    return data?.fullName || value;
-                                }}
-                            />
-                            <Legend />
-                            <Bar
-                                dataKey="revenue"
-                                name="Pendapatan/Bulan"
-                                fill="#4f46e5"
-                                radius={[0, 4, 4, 0]}
-                            />
-                        </BarChart>
-                    </ResponsiveContainer>
+                    <div className="h-96">
+                        <Bar
+                            data={revenueData}
+                            options={{
+                                ...chartOptions,
+                                indexAxis: 'y',
+                                plugins: {
+                                    ...chartOptions.plugins,
+                                    title: {
+                                        display: true,
+                                        text: 'Sumber Pendapatan',
+                                        color: '#1f2937',
+                                        font: {
+                                            size: 16
+                                        }
+                                    },
+                                    tooltip: {
+                                        ...chartOptions.plugins.tooltip,
+                                        callbacks: {
+                                            title: function (tooltipItems) {
+                                                const fullLabels = chartData.labels || [];
+                                                return fullLabels[tooltipItems[0].dataIndex] || tooltipItems[0].label;
+                                            }
+                                        }
+                                    }
+                                }
+                            }}
+                        />
+                    </div>
                 );
 
             case 'expense_breakdown':
-                const expenseData = chartData.labels?.map((label, index) => ({
-                    category: label.length > 15 ? label.substring(0, 15) + '...' : label,
-                    amount: chartData.values?.[index] || 0,
-                    fullName: label
-                })).sort((a, b) => b.amount - a.amount) || [];
+                const expenseData = {
+                    labels: chartData.labels?.map(label =>
+                        label.length > 15 ? label.substring(0, 15) + '...' : label
+                    ) || [],
+                    datasets: [
+                        {
+                            data: chartData.values || [],
+                            backgroundColor: COLORS,
+                            borderColor: COLORS.map(color => color),
+                            borderWidth: 1,
+                        }
+                    ]
+                };
 
                 return (
                     <div className="flex flex-col lg:flex-row gap-8">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <RePieChart>
-                                <Pie
-                                    data={expenseData}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={false}
-                                    label={({ category, amount }) => `${category}: ${formatCurrency(amount)}`}
-                                    outerRadius={80}
-                                    fill="#8884d8"
-                                    dataKey="amount"
-                                >
-                                    {expenseData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip formatter={(value) => [formatCurrency(value), 'Biaya']} />
-                            </RePieChart>
-                        </ResponsiveContainer>
+                        <div className="h-80 lg:h-96 lg:flex-1">
+                            <Pie
+                                data={expenseData}
+                                options={{
+                                    ...chartOptions,
+                                    plugins: {
+                                        ...chartOptions.plugins,
+                                        title: {
+                                            display: true,
+                                            text: 'Breakdown Biaya Operasional',
+                                            color: '#1f2937',
+                                            font: {
+                                                size: 16
+                                            }
+                                        },
+                                        tooltip: {
+                                            ...chartOptions.plugins.tooltip,
+                                            callbacks: {
+                                                title: function (tooltipItems) {
+                                                    const fullLabels = chartData.labels || [];
+                                                    return fullLabels[tooltipItems[0].dataIndex] || tooltipItems[0].label;
+                                                },
+                                                label: function (context) {
+                                                    const label = context.label || '';
+                                                    const value = context.parsed;
+                                                    return `${label}: ${formatCurrency(value)}`;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }}
+                            />
+                        </div>
 
                         <div className="space-y-2 min-w-[200px]">
                             <h4 className="font-medium text-gray-900 dark:text-white mb-3">Detail Biaya</h4>
-                            {expenseData.map((item, index) => (
+                            {chartData.labels?.map((label, index) => (
                                 <div key={index} className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div
                                             className="w-3 h-3 rounded"
                                             style={{ backgroundColor: COLORS[index % COLORS.length] }}
                                         />
-                                        <span className="text-sm text-gray-700 dark:text-gray-300" title={item.fullName}>
-                                            {item.category}
+                                        <span className="text-sm text-gray-700 dark:text-gray-300" title={label}>
+                                            {label.length > 20 ? label.substring(0, 20) + '...' : label}
                                         </span>
                                     </div>
                                     <div className="text-right">
                                         <div className="font-medium text-red-600 dark:text-red-400">
-                                            {formatCurrency(item.amount)}
+                                            {formatCurrency(chartData.values?.[index] || 0)}
                                         </div>
                                     </div>
                                 </div>
@@ -431,75 +487,125 @@ const FinancialPlanCharts = ({ plan, onBack }) => {
                 );
 
             case 'feasibility':
-                const feasibilityData = chartData.labels?.map((label, index) => ({
-                    metric: label,
-                    actual: chartData.values?.[index] || 0,
-                    target: chartData.targets?.[index] || 0
-                })) || [];
+                const feasibilityData = {
+                    labels: chartData.labels || ['ROI', 'Payback Period', 'Profit Margin'],
+                    datasets: [
+                        {
+                            label: 'Nilai Aktual',
+                            data: chartData.values || [0, 0, 0],
+                            backgroundColor: '#4f46e5',
+                            borderColor: '#4f46e5',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                        },
+                        {
+                            label: 'Target Ideal',
+                            data: chartData.targets || [25, 24, 20],
+                            backgroundColor: '#94a3b8',
+                            borderColor: '#94a3b8',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            opacity: 0.7,
+                        }
+                    ]
+                };
 
                 return (
-                    <ResponsiveContainer width="100%" height={400}>
-                        <BarChart data={feasibilityData}>
-                            <CartesianGrid strokeDasharray="3 3" className="opacity-30" stroke="#e5e7eb dark:stroke-gray-600" />
-                            <XAxis
-                                dataKey="metric"
-                                tick={{ fill: '#6b7280', fontSize: 12 }}
-                                className="text-gray-500 dark:text-gray-400"
-                            />
-                            <YAxis
-                                tick={{ fill: '#6b7280', fontSize: 12 }}
-                                className="text-gray-500 dark:text-gray-400"
-                            />
-                            <Tooltip
-                                formatter={(value, name) => {
-                                    if (name === 'actual') {
-                                        return [value, 'Nilai Aktual'];
+                    <div className="h-96">
+                        <Bar
+                            data={feasibilityData}
+                            options={{
+                                ...chartOptions,
+                                plugins: {
+                                    ...chartOptions.plugins,
+                                    title: {
+                                        display: true,
+                                        text: 'Analisis Kelayakan vs Target',
+                                        color: '#1f2937',
+                                        font: {
+                                            size: 16
+                                        }
+                                    },
+                                    tooltip: {
+                                        ...chartOptions.plugins.tooltip,
+                                        callbacks: {
+                                            label: function (context) {
+                                                let label = context.dataset.label || '';
+                                                const value = context.parsed.y;
+                                                if (context.datasetIndex === 0) {
+                                                    // Actual values
+                                                    if (context.dataIndex === 0) return `${label}: ${value}%`; // ROI
+                                                    if (context.dataIndex === 1) return `${label}: ${value} bulan`; // Payback
+                                                    if (context.dataIndex === 2) return `${label}: ${value}%`; // Margin
+                                                } else {
+                                                    // Target values
+                                                    if (context.dataIndex === 0) return `${label}: ${value}%`; // ROI Target
+                                                    if (context.dataIndex === 1) return `${label}: ${value} bulan`; // Payback Target
+                                                    if (context.dataIndex === 2) return `${label}: ${value}%`; // Margin Target
+                                                }
+                                                return `${label}: ${value}`;
+                                            }
+                                        }
                                     }
-                                    return [value, 'Target Ideal'];
-                                }}
-                            />
-                            <Legend />
-                            <Bar
-                                dataKey="actual"
-                                name="Nilai Aktual"
-                                fill="#4f46e5"
-                                radius={[4, 4, 0, 0]}
-                            />
-                            <Bar
-                                dataKey="target"
-                                name="Target Ideal"
-                                fill="#94a3b8"
-                                radius={[4, 4, 0, 0]}
-                                opacity={0.7}
-                            />
-                        </BarChart>
-                    </ResponsiveContainer>
+                                }
+                            }}
+                        />
+                    </div>
                 );
 
             case 'forecast':
                 if (!forecastData) return null;
 
+                const forecastChartData = {
+                    labels: forecastData.map(item => item.month),
+                    datasets: [
+                        {
+                            label: 'Proyeksi Pendapatan',
+                            data: forecastData.map(item => item.projected_income),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                        },
+                        {
+                            label: 'Proyeksi Biaya',
+                            data: forecastData.map(item => item.projected_opex),
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                        },
+                        {
+                            label: 'Proyeksi Laba',
+                            data: forecastData.map(item => item.projected_profit),
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                        }
+                    ]
+                };
+
                 return (
-                    <ResponsiveContainer width="100%" height={400}>
-                        <AreaChart data={forecastData}>
-                            <CartesianGrid strokeDasharray="3 3" className="opacity-30" stroke="#e5e7eb dark:stroke-gray-600" />
-                            <XAxis
-                                dataKey="month"
-                                tick={{ fill: '#6b7280', fontSize: 12 }}
-                                className="text-gray-500 dark:text-gray-400"
-                            />
-                            <YAxis
-                                tickFormatter={formatCurrency}
-                                tick={{ fill: '#6b7280', fontSize: 12 }}
-                                className="text-gray-500 dark:text-gray-400"
-                            />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend />
-                            <Area type="monotone" dataKey="projected_income" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.6} name="Proyeksi Pendapatan" />
-                            <Area type="monotone" dataKey="projected_opex" stackId="1" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} name="Proyeksi Biaya" />
-                            <Area type="monotone" dataKey="projected_profit" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.6} name="Proyeksi Laba" />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                    <div className="h-96">
+                        <Line
+                            data={forecastChartData}
+                            options={{
+                                ...chartOptions,
+                                plugins: {
+                                    ...chartOptions.plugins,
+                                    title: {
+                                        display: true,
+                                        text: 'Proyeksi Keuangan 12 Bulan',
+                                        color: '#1f2937',
+                                        font: {
+                                            size: 16
+                                        }
+                                    }
+                                }
+                            }}
+                        />
+                    </div>
                 );
 
             default:
@@ -511,7 +617,6 @@ const FinancialPlanCharts = ({ plan, onBack }) => {
         }
     };
 
-    // Download chart sebagai gambar
     const downloadChart = () => {
         toast.info('Fitur download chart akan segera tersedia');
     };
@@ -670,7 +775,6 @@ const FinancialPlanCharts = ({ plan, onBack }) => {
                     `Total modal awal: ${formatCurrency(plan.total_initial_capital || 0)}`,
                     'Diversifikasi sumber modal dapat mengurangi risiko'
                 ];
-
 
             case 'revenue_streams':
                 const topProduct = plan.sales_projections?.[0];

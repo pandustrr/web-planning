@@ -7,9 +7,10 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 30000, // 30 seconds timeout
 });
 
-// Add token to requests
+// Request interceptor - tambah token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -23,29 +24,64 @@ api.interceptors.request.use(
   }
 );
 
-// Handle responses - SANGAT SIMPLE, biarkan component handle error
+// Response interceptor - improved error handling
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
   (error) => {
-    // HANYA handle 401 jika benar-benar token expired
-    if (error.response?.status === 401) {
-      const errorMessage = error.response.data?.message?.toLowerCase() || '';
-      
-      // Hanya logout jika pesan error secara eksplisit menyebut token/authentication
-      const isExplicitTokenError = 
+    // Handle network errors
+    if (!error.response) {
+      console.error('Network Error:', error);
+      return Promise.reject({
+        message: 'Network error. Please check your connection.',
+        isNetworkError: true
+      });
+    }
+
+    const status = error.response?.status;
+    const errorMessage = error.response?.data?.message?.toLowerCase() || '';
+
+    // Handle 401 Unauthorized
+    if (status === 401) {
+      const isTokenError = 
         errorMessage.includes('token expired') ||
         errorMessage.includes('token invalid') ||
         errorMessage.includes('unauthenticated') ||
         errorMessage.includes('authentication failed');
-      
-      if (isExplicitTokenError) {
+
+      if (isTokenError) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        window.location.href = "/login";
+        // Only redirect if not already on login page
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = "/login?session=expired";
+        }
       }
-      // Untuk 401 lainnya, biarkan di-handle oleh component
     }
-    
+
+    // Handle 419 CSRF token mismatch (for Laravel)
+    if (status === 419) {
+      console.warn('CSRF token mismatch');
+      // You might want to refresh the page or get new CSRF token
+    }
+
+    // Handle 429 Too Many Requests
+    if (status === 429) {
+      return Promise.reject({
+        message: 'Too many requests. Please try again later.',
+        isRateLimit: true
+      });
+    }
+
+    // Handle 500 Internal Server Error
+    if (status >= 500) {
+      return Promise.reject({
+        message: 'Server error. Please try again later.',
+        isServerError: true
+      });
+    }
+
     return Promise.reject(error);
   }
 );
@@ -60,6 +96,10 @@ export const authAPI = {
   forgotPassword: (phone) => api.post("/forgot-password", { phone }),
   verifyResetOtp: (data) => api.post("/verify-reset-otp", data),
   resetPassword: (data) => api.post("/reset-password", data),
+  
+  // Refresh token method (if implemented in backend)
+  refreshToken: () => api.post("/refresh-token"),
 };
 
+// Export the instance for other APIs to use
 export default api;
